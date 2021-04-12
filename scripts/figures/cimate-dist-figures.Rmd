@@ -1,0 +1,191 @@
+---
+title: "climate-distribution-figures"
+author: "Millie Chapman"
+date: "3/17/2021"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+library(sf)
+library(ungeviz)
+```
+
+```{r}
+easement <- st_read("../data/PADUS2_0_Shapefiles/PADUS2_0Easement.shp") %>%
+  mutate(area = st_area(geometry)) %>%
+    filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
+  select(area, SHAPE_Area, State_Nm, Unit_Nm) %>%
+  mutate(PA_CE = "easement") %>%
+  group_by(PA_CE) %>%
+  mutate(total_area = sum(area)) %>% ungroup()
+
+easement <- as_tibble(easement)
+
+easement_future <- read_csv("../data/climate-distributions/easement_futurespp_all_ave.csv") %>%
+  rename(amphibians = "b1",
+         birds = "b1_1",
+         mammals = "b1_2",
+         reptiles = "b1_3") %>%
+    filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
+  select(Date_Est, GAP_Sts, State_Nm, Unit_Nm, SHAPE_Area, SHAPE_Leng, amphibians:reptiles) %>%
+  left_join(easement) %>%
+  mutate(amphibians = as.numeric(amphibians)*area/total_area,
+         birds = as.numeric(birds)*area/total_area,
+         mammals = as.numeric(mammals)*area/total_area,
+         reptiles = as.numeric(reptiles)*area/total_area) 
+```
+
+```{r}
+fee_exp <- st_read("../data/GEE/feeexpnum.shp") %>%
+    filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(PA_CE = "protected area") %>%
+  group_by(PA_CE) %>%
+  mutate(total_area = sum(area)) %>% ungroup()
+
+fee_exp <- as_tibble(fee_exp) %>%
+  select(Date_Est, GAP_Sts, area,State_Nm,  num, total_area, PA_CE) 
+  
+fee_future <- read_csv("../data/climate-distributions/fee_futurespp_all_ave.csv") %>%
+  rename(amphibians = "b1",
+         birds = "b1_1",
+         mammals = "b1_2",
+         reptiles = "b1_3") %>%
+  filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
+  select(amphibians:num) %>%
+  left_join(fee_exp, by = "num") %>%
+  group_by(PA_CE) %>%
+  mutate(total_area = sum(area)) %>%
+  ungroup() %>%
+  arrange(Date_Est) %>%
+  mutate(area = as.numeric(area),
+         total_area = as.numeric(total_area)) %>%
+  mutate(amphibians = as.numeric(amphibians)*area/total_area,
+         birds = as.numeric(birds)*area/total_area,
+         mammals = as.numeric(mammals)*area/total_area,
+         reptiles = as.numeric(reptiles)*area/total_area) 
+```
+
+```{r}
+background_future <- read_csv("../data/climate-distributions/background_futurespp_all.csv") %>%
+  rename(amphibians = "b1",
+         birds = "b1_1",
+         mammals = "b1_2",
+         reptiles = "b1_4") %>%
+  group_by(ADM0_NAME) %>%
+  summarise(amphibians = mean(amphibians),
+            birds = mean(birds),
+            mammals = mean(mammals),
+            reptiles = mean(reptiles),
+            richness = amphibians+birds+mammals+reptiles) %>%
+  pivot_longer(-ADM0_NAME) %>%
+  rename(background = "value") %>%
+  select(-ADM0_NAME)
+```
+
+```{r}
+easement_grouped <- easement_future %>%
+  group_by(PA_CE) %>%
+  summarise(amphibians = sum(amphibians, na.rm = TRUE),
+         birds = sum(birds,na.rm = TRUE),
+         mammals = sum(mammals, na.rm = TRUE),
+         #plants = sum(plants, na.rm = TRUE),
+         reptiles = sum(reptiles, na.rm = TRUE),
+         richness = amphibians+birds+mammals+reptiles) %>% 
+  drop_na() %>%
+  mutate(amphibians = as.numeric(amphibians),
+         birds = as.numeric(birds),
+         mammals = as.numeric(mammals),
+         reptiles = as.numeric(reptiles),
+         richness = as.numeric(richness))
+```
+
+
+```{r}
+fee_grouped <- fee_future %>% group_by(PA_CE) %>%
+  summarise(amphibians = sum(amphibians, na.rm = TRUE),
+         birds = sum(birds,na.rm = TRUE),
+         mammals = sum(mammals, na.rm = TRUE),
+        # plants = sum(plants, na.rm = TRUE),
+         reptiles = sum(reptiles, na.rm = TRUE),
+         richness = amphibians+birds+mammals+reptiles)
+```
+
+
+```{r}
+future_richness <-  fee_grouped %>% bind_rows(easement_grouped) %>%
+  pivot_longer(-PA_CE) %>%
+  mutate(value = as.numeric(value)) %>%
+  left_join(background_future)
+```
+
+```{r}
+public_private_future <- read_csv("../data/private_public_future.csv") %>%
+  left_join(background_future) %>%
+  mutate(richness = value-background) %>%
+  group_by(type) %>%
+  summarise(value = sum(value),
+            backgroud = sum(background),
+            richness = sum(richness)/sum(background)*100)%>% 
+  ungroup() %>%
+  mutate(name = "richness")
+```
+
+```{r fig_future_richness, fig.width=5, fig.height=4, dpi = 500}
+ future_richness  %>%
+  mutate(richness = (as.numeric(value)- as.numeric(background))/as.numeric(background)*100) %>%
+  filter(name == "richness") %>%
+  ggplot() + 
+  scale_fill_manual(values=c("#0072B2", "#E69F00")) +
+  geom_bar(mapping = aes(x= name, y= as.numeric(richness), fill = PA_CE),
+                                  stat = "identity", width=0.65,
+                                  position=position_dodge(width=0.8)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+    ylim(-95,80) +
+ geom_point(public_private_future, mapping = aes(x = name, y= as.numeric(richness),  group = type, color = type), stat = "identity", position=position_dodge(width=0.8),  pch = 18, size = 5) +
+  scale_color_manual(values=c("#0072B2", "#E69F00")) +
+  theme_minimal() +
+  theme(axis.title.x =element_blank()) +
+  theme(axis.text.x =element_blank()) +
+  #theme(axis.text.y = element_text(angle = 90,hjust=0.5)) +
+  theme(legend.title = element_blank()) + #coord_flip() +
+  #theme(legend.position = c(0.82,0.78)) +
+  theme(axis.text=element_text(size=8),
+        axis.title=element_text(size=10),
+        panel.border = element_rect(colour = "black", fill=NA),
+        legend.box.background = element_rect(colour = "black"),
+        legend.text = element_text(size = 8)) +
+  guides(shape = guide_legend(override.aes = list(size = 5))) +
+    labs(y = "% difference from background \n mean future species richness 2100") 
+ ## facet_grid(rows = vars(GAP_Sts))
+```
+
+```{r fig_future_richness, fig.width=5, fig.height=4, dpi = 500}
+ mammals <- future_richness  %>%
+  mutate(richness = (as.numeric(value)- as.numeric(background))/as.numeric(background)*100) %>%
+ # filter(name == "mammals") %>%
+  ggplot() + 
+  scale_fill_manual(values=c("#0072B2", "#E69F00")) +
+  geom_bar(mapping = aes(x= name, y= as.numeric(richness), fill = PA_CE),
+                                  stat = "identity", width=0.65,
+                                  position=position_dodge(width=0.8)) +
+  geom_hline(yintercept = 0, linetype = "dashed") + facet_wrap(~name)
+    ylim(-95,80) +
+ geom_point(public_private_future, mapping = aes(x = name, y= as.numeric(richness),  group = type, color = type), stat = "identity", position=position_dodge(width=0.8),  pch = 18, size = 3) +
+  scale_color_manual(values=c("#0072B2", "#E69F00")) +
+  theme_minimal() +
+  theme(axis.title.x =element_blank()) +
+  theme(axis.text.x =element_blank()) +
+  #theme(axis.text.y = element_text(angle = 90,hjust=0.5)) +
+  theme(legend.title = element_blank()) + #coord_flip() +
+  #theme(legend.position = c(0.82,0.78)) +
+  theme(axis.text=element_text(size=8),
+        axis.title=element_text(size=10),
+        panel.border = element_rect(colour = "black", fill=NA),
+        legend.box.background = element_rect(colour = "black"),
+        legend.text = element_text(size = 8)) +
+  guides(shape = guide_legend(override.aes = list(size = 5))) +
+    labs(y = "% difference from background \n mean future species richness 2100") 
+ ## facet_grid(rows = vars(GAP_Sts))
+```

@@ -1,0 +1,148 @@
+---
+title: "climate-distribution-figures"
+author: "Millie Chapman"
+date: "3/17/2021"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+library(sf)
+library(ungeviz)
+```
+
+```{r}
+easement <- st_read("../data/PADUS2_0_Shapefiles/PADUS2_0Easement.shp") %>%
+  mutate(area = st_area(geometry)) %>%
+    filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
+  select(area, SHAPE_Area, State_Nm, Unit_Nm) %>%
+  mutate(PA_CE = "easement") %>%
+  group_by(PA_CE) %>%
+  mutate(total_area = sum(area)) %>% ungroup()
+
+easement <- as_tibble(easement)
+
+easement_future <- read_csv("../data/climate-distributions/easement_futurespp_all.csv") %>%
+  rename(amphibians = "b1",
+         birds = "b1_1",
+         mammals = "b1_2",
+         plants = "b1_3",
+         reptiles = "b1_4") %>%
+    filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
+  select(Date_Est, GAP_Sts, State_Nm, Unit_Nm, SHAPE_Area, SHAPE_Leng, amphibians:reptiles) %>%
+  left_join(easement) %>%
+  mutate(amphibians = amphibians*area/total_area,
+         birds = birds*area/total_area,
+         mammals = mammals*area/total_area,
+         plants = plants*area/total_area,
+         reptiles = reptiles*area/total_area) 
+```
+
+```{r}
+fee_exp <- st_read("../data/GEE/feeexpnum.shp") %>%
+    filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(PA_CE = "protected area") %>%
+  group_by(PA_CE) %>%
+  mutate(total_area = sum(area)) %>% ungroup()
+
+fee_exp <- as_tibble(fee_exp) %>%
+  select(Date_Est, GAP_Sts, area,State_Nm,  num, total_area, PA_CE) 
+  
+fee_future <- read_csv("../data/climate-distributions/fee_futurespp_all_numbered.csv") %>%
+  rename(amphibians = "b1",
+         birds = "b1_1",
+         mammals = "b1_2",
+         plants = "b1_3",
+         reptiles = "b1_4") %>%
+  filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
+  select(amphibians:num) %>%
+  left_join(fee_exp, by = "num") %>%
+  group_by(PA_CE) %>%
+  mutate(total_area = sum(area)) %>%
+  ungroup %>%
+  arrange(Date_Est) %>%
+  mutate(amphibians = amphibians*area/total_area,
+         birds = birds*area/total_area,
+         mammals = mammals*area/total_area,
+         plants = plants*area/total_area,
+         reptiles = reptiles*area/total_area) 
+
+```
+
+```{r}
+background_future <- read_csv("../data/climate-distributions/background_futurespp_all.csv") %>%
+  rename(amphibians = "b1",
+         birds = "b1_1",
+         mammals = "b1_2",
+         plants = "b1_3",
+         reptiles = "b1_4") %>%
+  group_by(ADM0_NAME) %>%
+  summarise(amphibians = mean(amphibians),
+            birds = mean(birds),
+            mammals = mean(mammals),
+            plants = mean(plants),
+            reptiles = mean(reptiles)) %>%
+  pivot_longer(-ADM0_NAME)
+```
+
+```{r}
+easement_grouped <- easement_future %>%
+  group_by(PA_CE) %>%
+  summarise(amphibians = sum(amphibians, na.rm = TRUE),
+         birds = sum(birds,na.rm = TRUE),
+         mammals = sum(mammals, na.rm = TRUE),
+         plants = sum(plants, na.rm = TRUE),
+         reptiles = sum(reptiles, na.rm = TRUE)) %>% 
+  drop_na()
+```
+
+
+```{r}
+fee_grouped <- fee_future %>% group_by(PA_CE) %>%
+  summarise(amphibians = sum(amphibians, na.rm = TRUE),
+         birds = sum(birds,na.rm = TRUE),
+         mammals = sum(mammals, na.rm = TRUE),
+         plants = sum(plants, na.rm = TRUE),
+         reptiles = sum(reptiles, na.rm = TRUE))
+```
+
+
+```{r}
+future_richness <-  fee_grouped %>% bind_rows(easement_grouped) %>%
+  pivot_longer(-PA_CE) %>%
+  mutate(value = as.numeric(value))
+
+future_richness_all <-  fee_grouped %>% bind_rows(easement_grouped) %>%
+  mutate(richness = amphibians+birds+mammals+plants+reptiles)
+
+background_future_all <- background_future %>%
+  group_by(ADM0_NAME) %>%
+  summarise(richness = sum(value))
+```
+
+
+```{r fig1_taxa, fig.width=4, fig.height=5, dpi = 500}
+ggplot() + 
+  scale_fill_manual(values=c("#0072B2", "#E69F00")) +
+  geom_bar(future_richness, mapping = aes(x= name, y= as.numeric(value), fill = PA_CE),
+                                  stat = "identity", width=0.65,
+                                  position=position_dodge(width=0.8)) +
+  geom_hpline(data = background_future, aes(x = name, y =value), stat = "identity", height = 0.4, lwd = .9) +
+  #geom_point(private_public_richness, mapping = aes(x = name, y= as.numeric(value),  group = type), stat = "identity", position=position_dodge(width=0.8),  pch = 23, size = 2) +
+  scale_color_manual(values=c("black", "black")) +
+  theme_minimal() +
+  theme(axis.title.y =element_blank()) +
+  theme(axis.text.y = element_text(angle = 90,hjust=0.5)) +
+  theme(legend.title = element_blank()) + coord_flip() +
+  theme(legend.position = c(0.78, 0.7)) +
+   theme(axis.text=element_text(size=8),
+        axis.title=element_text(size=10),
+        panel.border = element_rect(colour = "black", fill=NA),
+        legend.box.background = element_rect(colour = "black"),
+        legend.text = element_text(size = 8)) +
+  guides(shape = guide_legend(override.aes = list(size = 5))) +
+    labs(y = "Projected mean species richness 2100") 
+ ## facet_grid(rows = vars(GAP_Sts))
+```
+

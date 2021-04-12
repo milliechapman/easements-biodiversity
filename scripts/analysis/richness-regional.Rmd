@@ -1,0 +1,88 @@
+---
+title: "richness-regional"
+author: "Millie Chapman"
+date: "3/27/2021"
+output: github_document
+---
+
+```{r}
+library(sf)
+library(tidyverse)
+```
+
+```{r}
+fee_richness <- st_read("../data/output/fee_richness_allpublic.shp")
+easement_richness <- st_read("../data/output/.shp")
+```
+
+
+```{r}
+background_richness <- st_read("../data/output/background_richness_bystate.shp")
+```
+
+```{r}
+regions <- read_csv("../data/regions.csv") %>% select(-X3)
+names <- as_tibble(fee_richness) %>%
+  select(Stat_Nm, d_Stt_N) %>% unique() %>%
+  rename(State = Stat_Nm) %>%
+  left_join(regions)%>%
+  rename(NAME_1 = State)
+```
+
+area weight biodiversity 
+```{r}
+fee <- fee_richness %>%
+  mutate(area = st_area(geometry)) %>%
+  group_by(Stat_Nm) %>% 
+  mutate(state_area = sum(area))
+
+fee <- fee %>%
+  mutate(perc_area = area/state_area) %>%
+  mutate(reptiles = mean(rptl_rc, na.rm = TRUE)*perc_area,
+         amphibians = mean(amphbn_, na.rm = TRUE)*perc_area,
+         mammals= mean(mmml_rc, na.rm = TRUE)*perc_area,
+         birds = mean(brd_rch, na.rm = TRUE)*perc_area,
+         fish = mean(fsh_rch, na.rm = TRUE)*perc_area)
+```
+
+
+```{r}
+richness_pa <- dplyr::as_tibble(fee) %>%
+  mutate(type = "public") %>%
+  #filter(GAP_Sts == "2") %>%
+  group_by(type, Stat_Nm, d_Stt_N) %>%
+  dplyr::summarize(reptiles = as.numeric(sum(reptiles, na.rm = TRUE)),
+            amphibians = as.numeric(sum(amphibians, na.rm = TRUE)),
+            mammals= as.numeric(sum(mammals, na.rm = TRUE)),
+            birds = as.numeric(sum(birds, na.rm = TRUE)),
+            fish = as.numeric(sum(fish, na.rm = TRUE)),
+            area = as.numeric(sum(area))) %>%
+  mutate(NAME_1 = d_Stt_N) 
+```
+
+```{r}
+richness_all <- as_tibble(background_richness) %>%
+  mutate(area = st_area(geometry)) %>%
+  left_join(names, by = ) %>%
+  group_by(NAME_1) %>% 
+  mutate(state_area = sum(area)) 
+
+richness_all <- richness_all %>%
+  mutate(perc_area = area/state_area) %>%
+  mutate(reptiles = mean(rptl_rc, na.rm = TRUE)*perc_area,
+         amphibians = mean(amphbn_, na.rm = TRUE)*perc_area,
+         mammals= mean(mmml_rc, na.rm = TRUE)*perc_area,
+         birds = mean(brd_rch, na.rm = TRUE)*perc_area,
+         fish = mean(fsh_rch, na.rm = TRUE)*perc_area)
+
+richness_background<- dplyr::as_tibble(richness_all) %>%
+  mutate(type = "background") %>%
+  #filter(GAP_Sts == "2") %>%
+  group_by(NAME_1, type) %>%
+  dplyr::summarize(reptiles = as.numeric(sum(reptiles, na.rm = TRUE)),
+            amphibians = as.numeric(sum(amphibians, na.rm = TRUE)),
+            mammals= as.numeric(sum(mammals, na.rm = TRUE)),
+            birds = as.numeric(sum(birds, na.rm = TRUE)),
+            fish = as.numeric(sum(fish, na.rm = TRUE)),
+            area = as.numeric(sum(area)))
+```

@@ -1,0 +1,202 @@
+---
+title: "figures-crenvu"
+author: "Millie Chapman"
+date: "3/1/2021"
+output: html_document
+---
+
+```{r}
+library(sf)
+library(tidyverse)
+```
+
+```{r}
+fee_richness <- st_read("../data/output/fee_richness_crenvu.shp")
+```
+
+```{r}
+easement_richness1 <- st_read("../data/output/easement_richness1_crenvu.shp")
+easement_richness2 <- st_read("../data/output/easement_richness2_crenvu.shp")
+easement_richness <- easement_richness1 %>%
+  bind_rows(easement_richness2)
+```
+
+```{r}
+background_richness <- st_read("../data/output/background_richness_crenvu.shp")
+```
+
+area weight biodiversity 
+```{r}
+easement <- easement_richness %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(total_area = sum(area)) %>%
+  mutate(perc_area = area/total_area) %>%
+  mutate(reptiles = mean(rptl_rc, na.rm = TRUE)*perc_area,
+         amphibians = mean(amphbn_, na.rm = TRUE)*perc_area,
+         mammals= mean(mmml_rc, na.rm = TRUE)*perc_area,
+         #birds = mean(brd_rch, na.rm = TRUE)*perc_area,
+         fish = mean(fsh_rch, na.rm = TRUE)*perc_area)
+
+fee <- fee_richness %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(total_area = sum(area)) %>%
+  mutate(perc_area = area/total_area) %>%
+  mutate(reptiles = mean(rptl_rc, na.rm = TRUE)*perc_area,
+         amphibians = mean(amphbn_, na.rm = TRUE)*perc_area,
+         mammals= mean(mmml_rc, na.rm = TRUE)*perc_area,
+         #birds = mean(brd_rch, na.rm = TRUE)*perc_area,
+         fish = mean(fsh_rch, na.rm = TRUE)*perc_area)
+```
+
+```{r}
+dplyr::as_tibble(fee) %>%
+  group_by(GAP_Sts) %>%
+  count()
+```
+
+```{r}
+richness_easement <- dplyr::as_tibble(easement) %>%
+  dplyr::mutate(type = "easement",
+                perc_area = area/total_area) %>%
+  dplyr::group_by(type) %>%
+  dplyr::summarize(reptiles = sum(reptiles, na.rm = TRUE),
+            amphibians = sum(amphibians, na.rm = TRUE),
+            mammals= sum(mammals, na.rm = TRUE),
+            #birds = sum(birds, na.rm = TRUE),
+            fish = sum(fish, na.rm = TRUE))
+  
+richness_pa <- dplyr::as_tibble(fee) %>%
+  mutate(type = "protected area") %>%
+  #filter(GAP_Sts == "2") %>%
+  group_by(type) %>%
+  dplyr::summarize(reptiles = sum(reptiles, na.rm = TRUE),
+            amphibians = sum(amphibians, na.rm = TRUE),
+            mammals= sum(mammals, na.rm = TRUE),
+            #birds = sum(birds, na.rm = TRUE),
+            fish = sum(fish, na.rm = TRUE))
+```
+
+
+
+```{r}
+richness_all <- as_tibble(background_richness) %>%
+  dplyr::mutate(type = NAME_0,
+         reptiles = mean(rptl_rc, na.rm = TRUE),
+         amphibians = mean(amphbn_, na.rm = TRUE),
+         mammals= mean(mmml_rc, na.rm = TRUE),
+         #birds = mean(brd_rch, na.rm = TRUE),
+         fish = mean(fsh_rch, na.rm = TRUE)) %>% select(type, reptiles, amphibians, mammals, fish)
+
+richness_protected <-richness_pa %>%
+  bind_rows(richness_easement) %>%
+  tidyr::pivot_longer(reptiles:fish) 
+
+richness_background <- richness_all %>%
+  tidyr::pivot_longer(reptiles:fish)
+```
+
+```{r}
+library(ggplot2)
+library(ungeviz)
+crenvu <- ggplot() + 
+  scale_fill_manual(values=c("#0072B2", "#E69F00")) +
+  geom_bar(richness_protected, mapping = aes(x= name, y= as.numeric(value), fill = type),
+                                  stat = "identity", width=0.65,
+                                  position=position_dodge(width=0.8)) +
+  geom_hpline(data = richness_background, aes(x=name, y =value), stat = "identity", height = 0.4, lwd = .75) +
+  geom_point(richness_background, mapping = aes(x = name, y= value), pch = 19) +
+  theme_minimal() +
+  theme(axis.title.y =element_blank()) +
+  theme(legend.title = element_blank()) + coord_flip() +
+  theme(legend.position = c(0.85, 0.89)) +
+   theme(axis.text=element_text(size=8),
+        axis.title=element_text(size=10),
+        panel.border = element_rect(colour = "black", fill=NA),
+        legend.box.background = element_rect(colour = "black"),
+        legend.text = element_text(size = 8)) +
+  guides(shape = guide_legend(override.aes = list(size = 5))) #+ 
+ ## facet_grid(rows = vars(GAP_Sts))
+```
+
+##Over time!
+
+```{r}
+richness_background_val <- richness_background %>%
+  mutate(background = value) %>%
+  select(background, name)
+
+easement_gap <- easement_richness %>%
+  mutate(area = st_area(geometry)) %>%
+  group_by(Dat_Est) %>%
+  mutate(total_area = sum(area)) %>%
+ # ungroup() %>%
+  mutate(perc_area = area/total_area) %>%
+  mutate(reptiles = mean(rptl_rc, na.rm = TRUE)*perc_area,
+         amphibians = mean(amphbn_, na.rm = TRUE)*perc_area,
+         mammals= mean(mmml_rc, na.rm = TRUE)*perc_area,
+        # birds = mean(brd_rch, na.rm = TRUE)*perc_area,
+         fish = mean(fsh_rch, na.rm = TRUE)*perc_area)
+
+fee <- fee_richness %>%
+   mutate(area = st_area(geometry)) %>%
+  group_by(Dat_Est) %>%
+  mutate(total_area = sum(area)) %>%
+ # ungroup() %>%
+  mutate(perc_area = area/total_area) %>%
+  mutate(reptiles = mean(rptl_rc, na.rm = TRUE)*perc_area,
+         amphibians = mean(amphbn_, na.rm = TRUE)*perc_area,
+         mammals= mean(mmml_rc, na.rm = TRUE)*perc_area,
+       #  birds = mean(brd_rch, na.rm = TRUE)*perc_area,
+         fish = mean(fsh_rch, na.rm = TRUE)*perc_area)
+
+richness_easement <- dplyr::as_tibble(easement_gap) %>%
+  mutate(type = "easement") %>%
+  group_by(type, Dat_Est) %>%
+  summarize(reptiles = sum(reptiles, na.rm = TRUE),
+            amphibians = sum(amphibians, na.rm = TRUE),
+            mammals= sum(mammals, na.rm = TRUE),
+         #   birds = sum(birds, na.rm = TRUE),
+            fish = sum(fish, na.rm = TRUE)) %>%
+  mutate(Dat_Est = as.numeric(Dat_Est))
+
+richness_pa <- as_tibble(fee) %>%
+  mutate(type = "protected area") %>%
+  #filter(GAP_Sts == "2") %>%
+  group_by(type, Dat_Est) %>%
+  summarize(reptiles = sum(reptiles, na.rm = TRUE),
+            amphibians = sum(amphibians, na.rm = TRUE),
+            mammals= sum(mammals, na.rm = TRUE),
+          #  birds = sum(birds, na.rm = TRUE),
+            fish = sum(fish, na.rm = TRUE)) %>%
+    mutate(Dat_Est = as.numeric(Dat_Est))
+
+richness_protected <-richness_pa %>%
+  bind_rows(richness_easement) %>%
+  tidyr::pivot_longer(cols = reptiles:fish) %>%
+  left_join(richness_background_val) %>%
+  mutate(value = (as.numeric(value) - background))
+```
+
+```{r fig.height=2, fig.width=6}
+richness_protected %>%
+  filter(Dat_Est >1980) %>% 
+  ggplot(aes(x = Dat_Est,
+             y = as.numeric(value), 
+             col = type)) + 
+  geom_line() + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  facet_grid(cols = vars(name)) +
+  theme_bw() +
+  scale_color_manual(values=c("#0072B2", "#E69F00")) +
+  theme(axis.title.x =element_blank()) +
+  ylab("weighted mean richness \n difference from background")+
+  theme(legend.title = element_blank()) + 
+  theme(legend.position = c(0.93, 0.85)) +
+   theme(axis.text=element_text(size=8),
+        axis.title=element_text(size=10),
+        panel.border = element_rect(colour = "black", fill=NA),
+        legend.box.background = element_rect(colour = "black"),
+        legend.text = element_text(size = 8)) +
+  guides(shape = guide_legend(override.aes = list(size = 5)))
+```
+
