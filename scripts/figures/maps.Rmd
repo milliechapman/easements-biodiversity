@@ -11,12 +11,6 @@ library(sf)
 ```
 
 ```{r}
-usa <- st_read("../data/gadm36_USA_shp/gadm36_USA_0.shp") %>%
-  mutate(area = st_area(geometry)) 
-```
-
-
-```{r}
 easement <- st_read("../data/PADUS2_0_Shapefiles/PADUS2_0Easement.shp")
 fee <- st_read("../data/PADUS2_0_Shapefiles/PADUS2_0Fee.shp")
 ```

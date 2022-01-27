@@ -1,0 +1,125 @@
+---
+title: "fig6"
+output: html_document
+---
+
+```{r}
+rm(list = ls())
+```
+
+# Carbon
+
+```{r}
+carbon_vulnerable <- raster("../data/carbon/Vulnerable_Carbon_2010/Vulnerable_C_Total_2010.tif")
+```
+
+# Aggregate biodiv
+
+```{r}
+richness_all <- raster("../data/IUCN-precalculated/Richness_all.tif")
+```
+
+```{r}
+res(carbon_vulnerable)
+res(richness_all)
+
+carbon_vulnerable_2 <- resample(carbon_vulnerable,richness_all,method='bilinear')
+writeRaster(carbon_vulnerable_2, "../data/carbon/Vulnerable_Carbon_2010/vulnerable_carbon_1km.tif")
+```
+```{r message=FALSE, include=FALSE}
+US <- st_read("../data/US_shp/s_11au16.shp") %>%
+  filter(STATE != "AS" & STATE != "PR" & STATE != "GU" & STATE != "VI")
+```
+
+
+
+r2 <- crop(r, extent(SPDF))
+r3 <- mask(r2, SPDF)
+
+```{r}
+carbon_vulnerable_US <- crop(carbon_vulnerable_2, extent(US))
+carbon_vulnerable_US <- mask(carbon_vulnerable_US, US)
+richness_all_US <- crop(richness_all, extent(US))
+richness_all_US <- mask(richness_all_US, US)
+```
+
+fee
+```{r}
+fee_R1 <- st_read("../data/PADUS/PAD_R1/PADUS2_1Fee_Region1.shp")
+fee_R2 <- st_read("../data/PADUS/PAD_R2/PADUS2_1Fee_Region2.shp")
+fee_R3 <- st_read("../data/PADUS/PAD_R3/PADUS2_1Fee_Region3.shp")
+fee_R4 <- st_read("../data/PADUS/PAD_R4/PADUS2_1Fee_Region4.shp")
+fee_R5 <- st_read("../data/PADUS/PAD_R5/PADUS2_1Fee_Region5.shp")
+fee_R6 <- st_read("../data/PADUS/PAD_R6/PADUS2_1Fee_Region6.shp")
+fee_R7 <- st_read("../data/PADUS/PAD_R7/PADUS2_1Fee_Region7.shp")
+fee_R8 <- st_read("../data/PADUS/PAD_R8/PADUS2_1Fee_Region8.shp")
+fee_R9 <- st_read("../data/PADUS/PAD_R9/PADUS2_1Fee_Region9.shp")
+fee_R10 <- st_read("../data/PADUS/PAD_R10/PADUS2_1Fee_Region10.shp")
+fee_R11 <- st_read("../data/PADUS/PAD_R11/PADUS2_1Fee_Region11.shp")
+fee_R12 <- st_read("../data/PADUS/PAD_R12/PADUS2_1Fee_Region12.shp")
+
+fee <- rbind(fee_R1,fee_R2,fee_R3,fee_R4, fee_R5, fee_R6,
+             fee_R7,fee_R8,fee_R9,fee_R10,fee_R11,fee_R12)
+
+rm(fee_R1,fee_R2,fee_R3,fee_R4, fee_R5, fee_R6,
+             fee_R7,fee_R8,fee_R9,fee_R10,fee_R11,fee_R12)
+fee_protected <- fee %>%
+  dplyr::select(GAP_Sts, geometry) %>%
+  mutate(GAP_Sts2 = as.numeric(GAP_Sts)) %>%
+  filter(GAP_Sts2 < 3) %>%
+  st_transform(crs = crs(carbon_vulnerable_US))
+
+public <- fee %>%
+  dplyr::select(GAP_Sts, geometry) %>%
+  mutate(GAP_Sts2 = as.numeric(GAP_Sts)) %>%
+  filter(GAP_Sts2 >2 ) %>%
+  st_transform(crs = crs(carbon_vulnerable_US))
+
+
+fee_raster<- fasterize(fee_protected, raster = carbon_vulnerable_US, fun = "sum")
+public_raster<- fasterize(public, raster = carbon_vulnerable_US, fun = "sum")
+
+m <- c(0, 10, 1)
+rclmat <- matrix(m, ncol=3, byrow=TRUE)
+fee_raster <- reclassify(fee_raster, rclmat)
+public_raster <- reclassify(public_raster, rclmat)
+
+overlap <- sum(fee_raster,public_raster)
+```
+
+```{r}
+Easement_R1 <- st_read("../data/PADUS/PAD_R1/PADUS2_1Easement_Region1.shp")
+Easement_R2 <- st_read("../data/PADUS/PAD_R2/PADUS2_1Easement_Region2.shp")
+Easement_R3 <- st_read("../data/PADUS/PAD_R3/PADUS2_1Easement_Region3.shp")
+Easement_R4 <- st_read("../data/PADUS/PAD_R4/PADUS2_1Easement_Region4.shp")
+Easement_R5 <- st_read("../data/PADUS/PAD_R5/PADUS2_1Easement_Region5.shp")
+Easement_R6 <- st_read("../data/PADUS/PAD_R6/PADUS2_1Easement_Region6.shp")
+Easement_R7 <- st_read("../data/PADUS/PAD_R7/PADUS2_1Easement_Region7.shp")
+Easement_R8 <- st_read("../data/PADUS/PAD_R8/PADUS2_1Easement_Region8.shp")
+Easement_R9 <- st_read("../data/PADUS/PAD_R9/PADUS2_1Easement_Region9.shp")
+Easement_R10 <- st_read("../data/PADUS/PAD_R10/PADUS2_1Easement_Region10.shp")
+Easement_R11 <- st_read("../data/PADUS/PAD_R11/PADUS2_1Easement_Region11.shp")
+Easement_R12 <- st_read("../data/PADUS/PAD_R12/PADUS2_1Easement_Region12.shp")
+
+Easement <- rbind(Easement_R1,Easement_R2,Easement_R3,Easement_R4, Easement_R5, Easement_R6,
+             Easement_R7,Easement_R8,Easement_R9,Easement_R10,Easement_R11,Easement_R12)
+rm(Easement_R1,Easement_R2,Easement_R3,Easement_R4, Easement_R5, Easement_R6,
+             Easement_R7,Easement_R8,Easement_R9,Easement_R10,Easement_R11,Easement_R12)
+easement_protected <- Easement %>%
+  dplyr::select(GAP_Sts, geometry) %>%
+  filter(GAP_Sts == "1" | GAP_Sts =="2") %>%
+  mutate(easement = 1) %>%
+  st_transform(crs = crs(richness_all_US))
+```
+
+
+```{r}
+library(raster)
+library(fasterize)
+r <- raster(fee_protected, res = res(richness_all_US))
+
+
+fee_raster <- fasterize(easement_protected, r)
+plot(fee_raster)
+```
+

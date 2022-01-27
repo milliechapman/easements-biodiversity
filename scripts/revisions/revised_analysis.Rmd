@@ -1,0 +1,345 @@
+---
+title: "updated-analysis"
+output: html_document
+---
+
+```{r}
+library(sf)
+library(tidyverse)
+library(raster)
+library(exactextractr)
+```
+
+# Regional data with extracted richness values
+
+Background 
+
+```{r}
+background <- read_csv("../data/summary_richness/fbackground_extract.csv") %>%
+  dplyr::select(STATE, mammal_mean:area)
+```
+
+Easements
+
+```{r}
+easements1 <- read_csv("../data/summary_richness/easement_R1_extract.csv")
+easements2 <- read_csv("../data/summary_richness/easement_R2_extract.csv")
+easements3 <- read_csv("../data/summary_richness/easement_R3_extract.csv")
+easements4 <- read_csv("../data/summary_richness/easement_R4_extract.csv")
+easements5 <- read_csv("../data/summary_richness/easement_R5_extract.csv")
+easements6 <- read_csv("../data/summary_richness/easement_R6_extract.csv")
+easements7 <- read_csv("../data/summary_richness/easement_R7_extract.csv")
+easements8 <- read_csv("../data/summary_richness/easement_R8_extract.csv")
+easements9 <- read_csv("../data/summary_richness/easement_R9_extract.csv")
+easements10 <- read_csv("../data/summary_richness/easement_R10_extract.csv")
+easements11 <- read_csv("../data/summary_richness/easement_R11_extract.csv")
+easements12 <- read_csv("../data/summary_richness/easement_R12_extract.csv")
+
+easements <- rbind(easements1, easements2,easements3, easements4, easements5, easements6, easements7,
+                   easements8, easements9, easements10, easements11, easements12)
+rm(easements1, easements2,easements3, easements4, easements5, easements6, easements7,
+                   easements8, easements9, easements10, easements11, easements12)
+easements <- easements %>%
+  dplyr::select(Category, Mang_Type, Des_Tp, State_Nm, Src_Date, GAP_Sts,EHoldTyp,
+         mammal_mean:area)
+```
+
+Fee 
+
+```{r}
+fee1 <- read_csv("../data/summary_richness/fee_R1_extract.csv")
+fee2 <- read_csv("../data/summary_richness/fee_R2_extract.csv")
+fee3 <- read_csv("../data/summary_richness/fee_R3_extract.csv")
+fee4 <- read_csv("../data/summary_richness/fee_R4_extract.csv")
+fee5 <- read_csv("../data/summary_richness/fee_R5_extract.csv")
+fee6 <- read_csv("../data/summary_richness/fee_R6_extract.csv")
+fee7 <- read_csv("../data/summary_richness/fee_R7_extract.csv")
+fee8 <- read_csv("../data/summary_richness/fee_R8_extract.csv")
+fee9 <- read_csv("../data/summary_richness/fee_R9_extract.csv")
+fee10 <- read_csv("../data/summary_richness/fee_R10_extract.csv")
+fee11 <- read_csv("../data/summary_richness/fee_R11_extract.csv")
+fee12 <- read_csv("../data/summary_richness/fee_R12_extract.csv")
+
+fee <- rbind(fee1, fee2,fee3, fee4, fee5, fee6, fee7,
+                   fee8, fee9, fee10, fee11, fee12)
+rm(fee1, fee2,fee3, fee4, fee5, fee6, fee7,
+                   fee8, fee9, fee10, fee11, fee12)
+fee <- fee %>%
+  dplyr::select(Category, Mang_Type, Des_Tp, State_Nm, Date_Est, GAP_Sts,
+         mammal_mean:area)
+```
+
+
+# Figure 2:
+
+## With Lawler Data
+
+```{r}
+f2e <- easements %>%
+  group_by(Category) %>%
+  mutate(total_area = sum(area)) %>%
+  ungroup() %>%
+  mutate(perc_area = area/total_area) %>%
+  mutate(reptiles = mean(reptile_mean, na.rm = TRUE)*perc_area,
+         amphibians = mean(amphibian_mean, na.rm = TRUE)*perc_area,
+         mammals= mean(mammal_mean, na.rm = TRUE)*perc_area,
+         birds = mean(bird_mean, na.rm = TRUE)*perc_area,
+         fish = mean(fw_iucn, na.rm = TRUE)*perc_area,
+         trees = mean(tree_mean, na.rm = TRUE)*perc_area,
+         plants = mean(plant_mean, na.rm = TRUE)*perc_area) %>%
+  group_by(Category) %>%
+  summarise(reptiles = sum(reptiles),
+         amphibians = sum(amphibians),
+         mammals= sum(mammals),
+         birds = sum(birds),
+         fish = sum(fish),
+         trees = sum(trees),
+         plants = sum(plants))
+```
+
+```{r}
+f2f <- fee %>%
+  filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
+  group_by(Category) %>%
+  mutate(total_area = sum(area)) %>%
+  ungroup() %>%
+  mutate(perc_area = area/total_area) %>%
+  mutate(reptiles = mean(reptile_mean, na.rm = TRUE)*perc_area,
+         amphibians = mean(amphibian_mean, na.rm = TRUE)*perc_area,
+         mammals= mean(mammal_mean, na.rm = TRUE)*perc_area,
+         birds = mean(bird_mean, na.rm = TRUE)*perc_area,
+         fish = mean(fw_iucn, na.rm = TRUE)*perc_area,
+         trees = mean(tree_mean, na.rm = TRUE)*perc_area,
+         plants = mean(plant_mean, na.rm = TRUE)*perc_area) %>%
+  group_by(Category) %>%
+  summarise(reptiles = sum(reptiles),
+         amphibians = sum(amphibians),
+         mammals= sum(mammals),
+         birds = sum(birds),
+         fish = sum(fish),
+         trees = sum(trees),
+         plants = sum(plants)) %>%
+  filter(Category == "Fee")
+```
+
+```{r}
+f2public <- fee %>%
+  filter(Category == "Fee") %>%
+  group_by(Category) %>%
+  mutate(total_area = sum(area)) %>%
+  ungroup() %>%
+  mutate(perc_area = area/total_area) %>%
+  mutate(reptiles = mean(reptile_mean, na.rm = TRUE)*perc_area,
+         amphibians = mean(amphibian_mean, na.rm = TRUE)*perc_area,
+         mammals= mean(mammal_mean, na.rm = TRUE)*perc_area,
+         birds = mean(bird_mean, na.rm = TRUE)*perc_area,
+         fish = mean(fw_iucn, na.rm = TRUE)*perc_area,
+         trees = mean(tree_mean, na.rm = TRUE)*perc_area,
+         plants = mean(plant_mean, na.rm = TRUE)*perc_area) %>%
+  group_by(Category) %>%
+  summarise(reptiles = sum(reptiles),
+         amphibians = sum(amphibians),
+         mammals= sum(mammals),
+         birds = sum(birds),
+         fish = sum(fish),
+         trees = sum(trees),
+         plants = sum(plants),
+         area = sum(area))
+```
+
+```{r}
+f2background <- background %>%
+  mutate(Category = "background") %>%
+  group_by(Category) %>%
+  mutate(total_area = sum(area)) %>%
+  ungroup() %>%
+  mutate(perc_area = area/total_area) %>%
+  mutate(reptiles = mean(reptile_mean, na.rm = TRUE)*perc_area,
+         amphibians = mean(amphibian_mean, na.rm = TRUE)*perc_area,
+         mammals= mean(mammal_mean, na.rm = TRUE)*perc_area,
+         birds = mean(bird_mean, na.rm = TRUE)*perc_area,
+         fish = mean(fw_iucn, na.rm = TRUE)*perc_area,
+         trees = mean(tree_mean, na.rm = TRUE)*perc_area,
+         plants = mean(plant_mean, na.rm = TRUE)*perc_area) %>%
+  group_by(Category) %>%
+  summarise(reptiles = sum(reptiles),
+         amphibians = sum(amphibians),
+         mammals= sum(mammals),
+         birds = sum(birds),
+         fish = sum(fish),
+         trees = sum(trees),
+         plants = sum(plants),
+         area = sum(area))
+```
+
+```{r}
+private <- rbind(f2public, f2background) %>%
+  mutate(total_area = sum(area)) %>%
+  mutate()
+```
+
+
+
+
+## With IUCN Data
+
+```{r}
+f2e <- easements %>%
+  group_by(Category) %>%
+  mutate(total_area = sum(area)) %>%
+  ungroup() %>%
+  mutate(perc_area = area/total_area) %>%
+  mutate(reptiles = mean(reptile_iucn, na.rm = TRUE)*perc_area,
+         amphibians = mean(amphibian_iucn, na.rm = TRUE)*perc_area,
+         mammals= mean(mammal_iucn, na.rm = TRUE)*perc_area,
+         birds = mean(bird_iucn, na.rm = TRUE)*perc_area,
+         fish = mean(fw_iucn, na.rm = TRUE)*perc_area) %>%
+  group_by(Category) %>%
+  summarise(reptiles = sum(reptiles),
+         amphibians = sum(amphibians),
+         mammals= sum(mammals),
+         birds = sum(birds),
+         fish = sum(fish))
+```
+
+```{r}
+f2f <- fee %>%
+  filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
+  group_by(Category) %>%
+  mutate(total_area = sum(area)) %>%
+  ungroup() %>%
+  mutate(perc_area = area/total_area) %>%
+  mutate(reptiles = mean(reptile_iucn, na.rm = TRUE)*perc_area,
+         amphibians = mean(amphibian_iucn, na.rm = TRUE)*perc_area,
+         mammals= mean(mammal_iucn, na.rm = TRUE)*perc_area,
+         birds = mean(bird_iucn, na.rm = TRUE)*perc_area,
+         fish = mean(fw_iucn, na.rm = TRUE)*perc_area) %>%
+  group_by(Category) %>%
+  summarise(reptiles = sum(reptiles),
+         amphibians = sum(amphibians),
+         mammals= sum(mammals),
+         birds = sum(birds),
+         fish = sum(fish)) %>%
+  filter(Category == "Fee")
+```
+
+```{r}
+richness <- rbind(f2f, f2e) 
+```
+
+# background, public, private
+
+```{r}
+f2public <- fee %>%
+  filter(Category == "Fee") %>%
+  mutate(Category = recode(Category, Fee = "Public")) %>%
+  group_by(Category) %>%
+  mutate(total_area = sum(area)) %>%
+  ungroup() %>%
+  mutate(perc_area = area/total_area) %>%
+  mutate(reptiles = mean(reptile_iucn, na.rm = TRUE)*perc_area,
+         amphibians = mean(amphibian_iucn, na.rm = TRUE)*perc_area,
+         mammals= mean(mammal_iucn, na.rm = TRUE)*perc_area,
+         birds = mean(bird_iucn, na.rm = TRUE)*perc_area,
+         fish = mean(fw_iucn, na.rm = TRUE)*perc_area) %>%
+  group_by(Category) %>%
+  summarise(reptiles = sum(reptiles),
+         amphibians = sum(amphibians),
+         mammals= sum(mammals),
+         birds = sum(birds),
+         fish = sum(fish),
+         area = sum(area))
+```
+
+```{r}
+f2background <- background %>%
+  mutate(Category = "background") %>%
+  group_by(Category) %>%
+  mutate(total_area = sum(area)) %>%
+  ungroup() %>%
+  mutate(perc_area = area/total_area) %>%
+  mutate(reptiles_b = mean(reptile_iucn, na.rm = TRUE)*perc_area,
+         amphibians_b = mean(amphibian_iucn, na.rm = TRUE)*perc_area,
+         mammals_b = mean(mammal_iucn, na.rm = TRUE)*perc_area,
+         birds_b = mean(bird_iucn, na.rm = TRUE)*perc_area,
+         fish_b = mean(fw_iucn, na.rm = TRUE)*perc_area) %>%
+  group_by(Category) %>%
+  summarise(reptiles_b = sum(reptiles_b),
+         amphibians_b = sum(amphibians_b),
+         mammals_b = sum(mammals_b),
+         birds_b = sum(birds_b),
+         fish_b = sum(fish_b),
+         area_b = mean(total_area)) %>%
+  dplyr::select(-Category) %>%
+  mutate(richness = "richness")
+```
+
+```{r}
+f2private <- f2public %>%
+  dplyr::select(-Category) %>%
+  cbind(f2background) %>%
+  mutate(area_p = area_b-area) %>%
+  mutate(reptiles = ((reptiles_b*area_b/area_b)-(reptiles*area/area_b))/(area_p/area_b),
+         amphibians = ((amphibians_b*area_b/area_b)-(amphibians*area/area_b))/(area_p/area_b),
+         mammals = ((mammals_b*area_b/area_b)-(mammals*area/area_b))/(area_p/area_b),
+         birds = ((birds_b*area_b/area_b)-(birds*area/area_b))/(area_p/area_b),
+         fish = ((fish_b*area_b/area_b)-(fish*area/area_b))/(area_p/area_b)) %>%
+  dplyr::select(reptiles:fish, area_p) %>%
+  mutate(Category = "Private") %>%
+  rename(area = area_p)
+```
+
+public private
+
+```{r}
+public_private <- f2private %>% rbind(f2public) %>%
+  mutate(richness = "richness") %>%
+  full_join(f2background) %>%
+  mutate(reptiles = (reptiles-reptiles_b)/reptiles_b*100,
+         amphibians = (amphibians-amphibians_b)/amphibians_b*100,
+         mammals = (mammals-mammals_b)/mammals_b*100,
+         birds = (birds-birds_b)/birds_b*100,
+         fish = (fish-fish_b)/fish_b*100) %>%
+  dplyr::select(reptiles:fish, Category) %>%
+  pivot_longer(-Category)
+```
+
+```{r}
+fee_easement <- f2f %>% rbind(f2e) %>%
+  mutate(richness = "richness") %>%
+  full_join(f2background) %>%
+  mutate(reptiles = (reptiles-reptiles_b)/reptiles_b*100,
+         amphibians = (amphibians-amphibians_b)/amphibians_b*100,
+         mammals = (mammals-mammals_b)/mammals_b*100,
+         birds = (birds-birds_b)/birds_b*100,
+         fish = (fish-fish_b)/fish_b*100) %>%
+  dplyr::select(Category:fish) %>%
+  pivot_longer(-Category)
+```
+
+```{r fig.width=5, fig.height=5, dpi = 300}
+ggplot() + 
+  scale_fill_manual(values=c("#0072B2", "#E69F00")) +
+  geom_bar(fee_easement, mapping = aes(x= name, y= as.numeric(value), fill = Category),
+                                  stat = "identity", width=0.65,
+                                  position=position_dodge(width=0.8)) +
+  geom_hline(yintercept=0, linetype="dashed") +
+  #geom_point(richness_background, mapping = aes(x = name, y= value), pch = 19) +
+  geom_point(public_private, mapping = aes(x = name, y= as.numeric(value),  group = Category, color = Category), stat = "identity", position=position_dodge(width=0.8),  pch = 19, size = 2) +
+  scale_color_manual(values=c("black", "black")) +
+  scale_fill_manual(values=c("#0072B2", "#E69F00")) +
+  theme_classic() +
+  theme(axis.title.y =element_blank()) +
+  theme(axis.text.y = element_text(angle = 90,hjust=0.5)) +
+  theme(legend.title = element_blank()) + coord_flip() +
+  theme(legend.position = "bottom") +
+  ylim(-95,95) +
+   theme(axis.text=element_text(size=8),
+        axis.title=element_text(size=10),
+        panel.border = element_rect(colour = "black", fill=NA),
+        legend.box.background = element_rect(colour = "black"),
+        legend.text = element_text(size = 8)) +
+  guides(shape = guide_legend(override.aes = list(size = 5))) +
+    labs(y = "% difference from background mean species richness") 
+```
+

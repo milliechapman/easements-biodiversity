@@ -1,0 +1,506 @@
+---
+title: "protected_areas"
+output: html_document
+---
+
+```{r}
+#unzip("/minio/upload/Irrecoverable_Carbon_2010.zip", exdir = "../data/carbon/")
+#unzip("/minio/upload/Manageable_Carbon_2010.zip", exdir = "../data/carbon/")
+#unzip("/minio/upload/Vulnerable_Carbon_2010.zip", exdir = "../data/carbon/")
+```
+
+```{r}
+library(tidyverse)
+library(sf)
+library(raster)
+library(exactextractr)
+```
+
+# Carbon
+
+```{r}
+carbon_irrecov <- raster("../data/carbon/Irrecoverable_Carbon_2010/Irrecoverable_C_Total_2010.tif")
+carbon_manage <- raster("../data/carbon/Manageable_Carbon_2010/Manageable_C_Total_2010.tif")
+carbon_vulnerable <- raster("../data/carbon/Vulnerable_Carbon_2010/Vulnerable_C_Total_2010.tif")
+```
+
+# Aggregate biodiv
+
+```{r}
+richness_crenvu <- raster("../data/IUCN-precalculated/Richness_crenvu.tif")
+richness_all <- raster("../data/IUCN-precalculated/Richness_all.tif")
+RSR_all <- raster("../data/IUCN-precalculated/RSR_all.tif")
+```
+
+# Richness 
+
+Lawler - current
+
+```{r}
+tree_richness <- raster("../data/richness_rasters/tree_richness_lawler.tif")
+mammals_richness <- raster("../data/richness_rasters/mammal_richness_lawler.tif")
+plant_richness <- raster("../data/richness_rasters/plant_richness_lawler.tif")
+birds_richness <- raster("../data/richness_rasters/bird_richness_lawler.tif")
+amphibian_richness <- raster("../data/richness_rasters/amphibian_richness_lawler.tif")
+reptile_richness <- raster("../data/richness_rasters/reptile_richness_lawler.tif")
+```
+
+Lawler - future
+
+```{r}
+tree_future <-raster("../data/richness_rasters/tree_future_lawler.tif")
+mammals_future <-raster("../data/richness_rasters/mammal_future_lawler.tif")
+plant_future <-raster("../data/richness_rasters/plants_future_lawler.tif")
+bird_future <-raster("../data/richness_rasters/birds_future_lawler.tif")
+amphibian_future <-raster("../data/richness_rasters/amphibians_future_lawler.tif")
+reptile_future <-raster("../data/richness_rasters/reptile_future_lawler.tif")
+```
+
+IUCN - current
+
+```{r}
+reptile_iucn <- raster("../data/richness_rasters/reptile_richness.tif")
+mammal_iucn <- raster("../data/richness_rasters/mammal_richness.tif")
+bird_iucn <- raster("../data/richness_rasters/bird_richness.tif")
+amphibian_iucn <- raster("../data/richness_rasters/amphibian_richness.tif")
+fw_iucn <- raster("../data/richness_rasters/fw_richness.tif")
+```
+
+
+
+# make function
+
+```{r}
+extract_fun <- function(x) {
+  x %>%
+  mutate(mammal_mean = exactextractr::exact_extract(mammals_richness, x, 'mean'),
+         reptile_mean = exactextractr::exact_extract(reptile_richness, x, 'mean'),
+         amphibian_mean = exactextractr::exact_extract(amphibian_richness, x, 'mean'),
+         plant_mean = exactextractr::exact_extract(plant_richness, x, 'mean'),
+         bird_mean = exactextractr::exact_extract(birds_richness, x, 'mean'),
+         tree_mean = exactextractr::exact_extract(tree_richness, x, 'mean'),
+         mammal_future = exactextractr::exact_extract(mammals_future, x, 'mean'),
+         reptile_future = exactextractr::exact_extract(reptile_future, x, 'mean'),
+         amphibian_future = exactextractr::exact_extract(amphibian_future, x, 'mean'),
+         plant_future = exactextractr::exact_extract(plant_future, x, 'mean'),
+         bird_future = exactextractr::exact_extract(bird_future, x, 'mean'),
+         tree_future = exactextractr::exact_extract(tree_future, x, 'mean'),
+         mammal_iucn = exactextractr::exact_extract(mammal_iucn, x, 'mean'),
+         reptile_iucn = exactextractr::exact_extract(reptile_iucn, x, 'mean'),
+         amphibian_iucn = exactextractr::exact_extract(amphibian_iucn, x, 'mean'),
+         bird_iucn = exactextractr::exact_extract(bird_iucn, x, 'mean'),
+         fw_iucn = exactextractr::exact_extract(fw_iucn, x, 'mean'),
+         richness_all = exactextractr::exact_extract(richness_all, x, 'mean'),
+         richness_crenvu = exactextractr::exact_extract(richness_crenvu, x, 'mean'),
+         RSR_all = exactextractr::exact_extract(RSR_all, x, 'mean'),
+         carbon_irrecov = exactextractr::exact_extract(carbon_irrecov, x, 'mean'),
+         carbon_manage = exactextractr::exact_extract(carbon_manage, x, 'mean'),
+         carbon_vulnerable = exactextractr::exact_extract(carbon_vulnerable, x, 'mean'))
+}
+```
+
+# Region 1
+
+```{r}
+fee_R1 <- st_read("../data/PADUS/PAD_R1/PADUS2_1Fee_Region1.shp")
+fee_R1 <- fee_R1 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R1)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) 
+```
+
+```{r}
+easement_R1 <- st_read("../data/PADUS/PAD_R1/PADUS2_1Easement_Region1.shp")
+easement_R1 <- easement_R1 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R1)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GAP_Sts==1|GAP_Sts==2) %>%
+  filter(GIS_Acres>1) 
+
+mean(easement_R1$Access_Dt)
+```
+
+```{r warning = FALSE}
+easement_R1_extract <- extract_fun(easement_R1)
+fee_R1_extract <- extract_fun(fee_R1)
+```
+
+```{r}
+easement_R1_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/easement_R1_extract.csv")
+
+fee_R1_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fee_R1_extract.csv")
+```
+
+# Region 2
+
+```{r warning = FALSE}
+fee_R2 <- st_read("../data/PADUS/PAD_R2/PADUS2_1Fee_Region2.shp")
+fee_R2 <- fee_R2 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R2)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) 
+
+easement_R2 <- st_read("../data/PADUS/PAD_R2/PADUS2_1Easement_Region2.shp")
+easement_R2 <- easement_R2 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R2)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GAP_Sts==1|GAP_Sts==2) %>%
+  filter(GIS_Acres>1) 
+
+easement_R2_extract <- extract_fun(easement_R2)
+fee_R2_extract <- extract_fun(fee_R2)
+
+easement_R2_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/easement_R2_extract.csv")
+
+fee_R2_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fee_R2_extract.csv")
+```
+
+
+# Region 3
+
+```{r}
+fee_R3 <- st_read("../data/PADUS/PAD_R3/PADUS2_1Fee_Region3.shp")
+fee_R3 <- fee_R3 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R3)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) 
+```
+
+```{r}
+easement_R3 <- st_read("../data/PADUS/PAD_R3/PADUS2_1Easement_Region3.shp")
+easement_R3 <- easement_R3 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R3)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GAP_Sts==1|GAP_Sts==2) %>%
+  filter(GIS_Acres>1) 
+```
+
+```{r warning = FALSE}
+easement_R3_extract <- extract_fun(easement_R3)
+fee_R3_extract <- extract_fun(fee_R3)
+```
+
+```{r}
+easement_R3_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/easement_R3_extract.csv")
+
+fee_R3_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fee_R3_extract.csv")
+```
+
+
+
+# Region 4
+
+```{r  warning = FALSE}
+fee_R4 <- st_read("../data/PADUS/PAD_R4/PADUS2_1Fee_Region4.shp")
+fee_R4 <- fee_R4 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R4)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) 
+
+easement_R4 <- st_read("../data/PADUS/PAD_R4/PADUS2_1Easement_Region4.shp")
+easement_R4 <- easement_R4 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R4)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GAP_Sts==1|GAP_Sts==2) %>%
+  filter(GIS_Acres>1) 
+
+easement_R4_extract <- extract_fun(easement_R4)
+fee_R4_extract <- extract_fun(fee_R4)
+
+easement_R4_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/easement_R4_extract.csv")
+
+fee_R4_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fee_R4_extract.csv")
+```
+
+
+# Region 5 
+
+```{r warning = FALSE}
+fee_R5 <- st_read("../data/PADUS/PAD_R5/PADUS2_1Fee_Region5.shp")
+fee_R5 <- fee_R5 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R5)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) 
+
+easement_R5 <- st_read("../data/PADUS/PAD_R5/PADUS2_1Easement_Region5.shp")
+easement_R5 <- easement_R5 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R5)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GAP_Sts==1|GAP_Sts==2) %>%
+  filter(GIS_Acres>1) 
+
+easement_R5_extract <- extract_fun(easement_R5)
+fee_R5_extract <- extract_fun(fee_R5)
+
+easement_R5_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/easement_R5_extract.csv")
+
+fee_R5_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fee_R5_extract.csv")
+```
+
+
+
+
+# Region 6
+
+```{r warning = FALSE}
+fee_R6 <- st_read("../data/PADUS/PAD_R6/PADUS2_1Fee_Region6.shp")
+fee_R6 <- fee_R6 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R6)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) 
+
+easement_R6 <- st_read("../data/PADUS/PAD_R6/PADUS2_1Easement_Region6.shp")
+easement_R6 <- easement_R6 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R6)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GAP_Sts==1|GAP_Sts==2) %>%
+  filter(GIS_Acres>1) 
+
+easement_R6_extract <- extract_fun(easement_R6)
+fee_R6_extract <- extract_fun(fee_R6)
+
+easement_R6_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/easement_R6_extract.csv")
+
+fee_R6_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fee_R6_extract.csv")
+```
+
+
+# Region 7
+
+```{r warning = FALSE}
+fee_R7 <- st_read("../data/PADUS/PAD_R7/PADUS2_1Fee_Region7.shp")
+fee_R7 <- fee_R7 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R7)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) 
+
+easement_R7 <- st_read("../data/PADUS/PAD_R7/PADUS2_1Easement_Region7.shp")
+easement_R7 <- easement_R7 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R7)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GAP_Sts==1|GAP_Sts==2) %>%
+  filter(GIS_Acres>1) 
+
+easement_R7_extract <- extract_fun(easement_R7)
+fee_R7_extract <- extract_fun(fee_R7)
+
+easement_R7_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/easement_R7_extract.csv")
+
+fee_R7_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fee_R7_extract.csv")
+```
+
+# Region 8 
+
+```{r warning = FALSE}
+fee_R8 <- st_read("../data/PADUS/PAD_R8/PADUS2_1Fee_Region8.shp")
+fee_R8 <- fee_R8 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R8)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) 
+
+easement_R8 <- st_read("../data/PADUS/PAD_R8/PADUS2_1Easement_Region8.shp")
+easement_R8 <- easement_R8 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R8)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GAP_Sts==1|GAP_Sts==2) %>%
+  filter(GIS_Acres>1) 
+
+easement_R8_extract <- extract_fun(easement_R8)
+fee_R8_extract <- extract_fun(fee_R8)
+
+easement_R8_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/easement_R8_extract.csv")
+
+fee_R8_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fee_R8_extract.csv")
+```
+
+# Region 9
+
+```{r warning = FALSE}
+fee_R9 <- st_read("../data/PADUS/PAD_R9/PADUS2_1Fee_Region9.shp")
+fee_R9 <- fee_R9 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R9)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) 
+
+easement_R9 <- st_read("../data/PADUS/PAD_R9/PADUS2_1Easement_Region9.shp")
+easement_R9 <- easement_R9 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R9)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GAP_Sts==1|GAP_Sts==2) %>%
+  filter(GIS_Acres>1) 
+
+easement_R9_extract <- extract_fun(easement_R9)
+fee_R9_extract <- extract_fun(fee_R9)
+
+easement_R9_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/easement_R9_extract.csv")
+
+fee_R9_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fee_R9_extract.csv")
+```
+
+
+
+# Region 10
+```{r warning = FALSE}
+fee_R10 <- st_read("../data/PADUS/PAD_R10/PADUS2_1Fee_Region10.shp")
+fee_R10 <- fee_R10 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R10)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) 
+
+easement_R10 <- st_read("../data/PADUS/PAD_R10/PADUS2_1Easement_Region10.shp")
+easement_R10 <- easement_R10 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R10)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GAP_Sts==1|GAP_Sts==2) %>%
+  filter(GIS_Acres>1) 
+
+easement_R10_extract <- extract_fun(easement_R10)
+fee_R10_extract <- extract_fun(fee_R10)
+
+easement_R10_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/easement_R10_extract.csv")
+
+fee_R10_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fee_R10_extract.csv")
+```
+
+# Region 11
+
+```{r warning = FALSE}
+fee_R11 <- st_read("../data/PADUS/PAD_R11/PADUS2_1Fee_Region11.shp")
+fee_R11 <- fee_R11 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R11)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) 
+
+easement_R11 <- st_read("../data/PADUS/PAD_R11/PADUS2_1Easement_Region11.shp")
+easement_R11 <- easement_R11 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R11)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GAP_Sts==1|GAP_Sts==2) %>%
+  filter(GIS_Acres>1) 
+
+easement_R11_extract <- extract_fun(easement_R11)
+fee_R11_extract <- extract_fun(fee_R11)
+
+easement_R11_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/easement_R11_extract.csv")
+
+fee_R11_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fee_R11_extract.csv")
+```
+
+# Region 12
+
+```{r warning = FALSE}
+fee_R12 <- st_read("../data/PADUS/PAD_R12/PADUS2_1Fee_Region12.shp")
+fee_R12 <- fee_R12 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R12)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) 
+
+easement_R12 <- st_read("../data/PADUS/PAD_R12/PADUS2_1Easement_Region12.shp")
+easement_R12 <- easement_R12 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R12)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GAP_Sts==1|GAP_Sts==2) %>%
+  filter(GIS_Acres>1) 
+
+easement_R12_extract <- extract_fun(easement_R12)
+fee_R12_extract <- extract_fun(fee_R12)
+
+easement_R12_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/easement_R12_extract.csv")
+
+fee_R12_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fee_R12_extract.csv")
+```
+
+```{r warning = FALSE}
+fee_R12 <- st_read("../data/PADUS/PAD_R12/PADUS2_1Fee_Region12.shp")
+fee_R12 <- fee_R12 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R12)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) 
+
+easement_R12 <- st_read("../data/PADUS/PAD_R12/PADUS2_1Easement_Region12.shp")
+easement_R12 <- easement_R12 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R12)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GAP_Sts==1|GAP_Sts==2) %>%
+  filter(GIS_Acres>1) 
+
+easement_R12_extract <- extract_fun(easement_R12)
+fee_R12_extract <- extract_fun(fee_R12)
+
+easement_R12_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/easement_R12_extract.csv")
+
+fee_R12_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fee_R12_extract.csv")
+```
+
+
+# US State 
+
+```{r}
+library(tigris)
+background <- states(cb = FALSE)
+#background <- st_make_valid(background) #%>%
+  #dplyr::mutate(valid =st_is_valid(background)) %>% 
+  #dplyr::filter(valid=="TRUE") 
+```
+
+```{r warning=FALSE}
+background_extract <- extract_fun(background)
+plot(background$geometry)
+background_extract %>%
+  mutate(area = st_area(geometry)) %>%
+  write_csv("../data/summary_richness/fbackground_extract.csv")
+```
+
+
