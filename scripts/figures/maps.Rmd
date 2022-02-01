@@ -11,7 +11,7 @@ library(sf)
 ```
 
 ```{r}
-easement <- st_read("../data/PADUS2_0_Shapefiles/PADUS2_0Easement.shp")
+easement <- st_read("../data/PADUS/PADUS2_0_Shapefiles/PADUS2_0Easement.shp")
 fee <- st_read("../data/PADUS2_0_Shapefiles/PADUS2_0Fee.shp")
 ```
 

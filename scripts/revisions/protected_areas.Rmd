@@ -67,6 +67,38 @@ fw_iucn <- raster("../data/richness_rasters/fw_richness.tif")
 ```
 
 
+```{r}
+carbon_vulnerable_pts <- resample(carbon_vulnerable, richness_all, method = 'bilinear')
+
+richness_pts <- rasterToPoints(richness_all)
+carbon_pts <- rasterToPoints(carbon_vulnerable_pts)
+richness_pts <- as_tibble(richness_pts)
+
+plot(richness_all)
+dfx <- as.tibble(carbon_pts) %>%
+  left_join(richness_pts) %>%
+  pivot_longer(-c(x,y)) %>%
+  mutate(x = round(x, 0)) %>%
+  group_by(x, name) %>% 
+  summarise(value = mean(value, na.rm = TRUE)) %>%
+  ungroup() 
+
+dfx %>% ggplot(aes(x = x, y = value, fill = name)) + 
+  geom_bar(stat = "identity", alpha = 0.5) + 
+  theme_classic()
+
+dfy <- as.tibble(carbon_pts) %>%
+  left_join(richness_pts) %>%
+  pivot_longer(-c(x,y)) %>%
+  mutate(y = round(y, 0)) %>%
+  group_by(y, name) %>% 
+  summarise(value = mean(value, na.rm = TRUE)) %>%
+  ungroup() 
+
+dfy %>% ggplot(aes(x = y, y = value, fill = name)) + 
+  geom_bar(stat = "identity") + 
+  theme_classic()
+```
 
 # make function
 

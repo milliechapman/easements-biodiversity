@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.23 (TeX Live 2021) (preloaded format=pdflatex 2022.1.10)  23 JAN 2022 03:28
+This is pdfTeX, Version 3.141592653-2.6-1.40.23 (TeX Live 2021) (preloaded format=pdflatex 2022.1.10)  1 FEB 2022 01:04
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -456,44 +456,44 @@ LaTeX Info: Redefining \nameref on input line 97.
 \@outlinefile=\write4
 \openout4 = `manscript_biosciences.out'.
 
-LaTeX Font Info:    Trying to load font information for T1+lmss on input line 141.
+LaTeX Font Info:    Trying to load font information for T1+lmss on input line 132.
 (/home/millie/.TinyTeX/texmf-dist/tex/latex/lm/t1lmss.fd
 File: t1lmss.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 141.
+LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 132.
 (/home/millie/.TinyTeX/texmf-dist/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for OML+lmm on input line 141.
+LaTeX Font Info:    Trying to load font information for OML+lmm on input line 132.
 (/home/millie/.TinyTeX/texmf-dist/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 141.
+LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 132.
 (/home/millie/.TinyTeX/texmf-dist/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 141.
+LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 132.
 (/home/millie/.TinyTeX/texmf-dist/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 141.
+(Font)              <10> on input line 132.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 141.
+(Font)              <7> on input line 132.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 141.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 141.
+(Font)              <5> on input line 132.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 132.
 (/home/millie/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 141.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 132.
 (/home/millie/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 141.
+(Font)              <8> on input line 132.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 141.
+(Font)              <6> on input line 132.
 
 Overfull \hbox (2.22221pt too wide) has occurred while \output is active
 [] 
@@ -501,92 +501,73 @@ Overfull \hbox (2.22221pt too wide) has occurred while \output is active
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\<def>-command' on input line 158.
+(hyperref)                removing `\<def>-command' on input line 172.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\cnotenum' on input line 158.
+(hyperref)                removing `\cnotenum' on input line 172.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\<def>-command' on input line 158.
+(hyperref)                removing `\<def>-command' on input line 172.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\@corref' on input line 158.
+(hyperref)                removing `\@corref' on input line 172.
 
 [1
 
 {/home/millie/.TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2]
 
-LaTeX Warning: Reference `fig:fig1' on page 3 undefined on input line 235.
+LaTeX Warning: Reference `fig:fig1' on page 3 undefined on input line 247.
 
 
-LaTeX Warning: Reference `fig:fig1' on page 3 undefined on input line 237.
+LaTeX Warning: Reference `fig:fig1' on page 3 undefined on input line 249.
 
 
-LaTeX Warning: Reference `fig:fig1' on page 3 undefined on input line 239.
+LaTeX Warning: Reference `fig:fig1' on page 3 undefined on input line 251.
 
 
-LaTeX Warning: Reference `fig:fig1' on page 3 undefined on input line 242.
+LaTeX Warning: Reference `fig:fig1' on page 3 undefined on input line 254.
 
 
-LaTeX Warning: Reference `fig:fig2' on page 3 undefined on input line 248.
+LaTeX Warning: Reference `fig:fig2' on page 3 undefined on input line 273.
 
 
-LaTeX Warning: Reference `fig:fig2' on page 3 undefined on input line 252.
+LaTeX Warning: Reference `fig:fig2' on page 3 undefined on input line 277.
 
 
-LaTeX Warning: Reference `fig:fig2' on page 3 undefined on input line 255.
+LaTeX Warning: Reference `fig:fig2' on page 3 undefined on input line 280.
 
 
-LaTeX Warning: Reference `fig:fig3' on page 3 undefined on input line 262.
+LaTeX Warning: Reference `fig:fig3' on page 3 undefined on input line 287.
 
 [3]
 
-Package natbib Warning: Citation `Lawler2020b' on page 4 undefined on input line 270.
+Package natbib Warning: Citation `Lawler2020b' on page 4 undefined on input line 310.
 
 
-LaTeX Warning: Reference `fig:fig4' on page 4 undefined on input line 272.
+LaTeX Warning: Reference `fig:fig4' on page 4 undefined on input line 312.
 
 
-LaTeX Warning: Reference `fig:fig4' on page 4 undefined on input line 276.
+LaTeX Warning: Reference `fig:fig4' on page 4 undefined on input line 316.
 
 
-LaTeX Warning: Reference `fig:fig4' on page 4 undefined on input line 276.
+LaTeX Warning: Reference `fig:fig4' on page 4 undefined on input line 316.
+
+[4]
+
+LaTeX Warning: Reference `fig:fig5' on page 5 undefined on input line 322.
 
 
-LaTeX Warning: Reference `fig:fig5' on page 4 undefined on input line 282.
+LaTeX Warning: Reference `fig:fig5' on page 5 undefined on input line 323.
 
-
-LaTeX Warning: Reference `fig:fig5' on page 4 undefined on input line 283.
-
-[4] [5] [6]
+[5] [6]
 
 Package hyperref Warning: Difference (2) between bookmark levels is greater 
-(hyperref)                than one, level fixed on input line 454.
+(hyperref)                than one, level fixed on input line 463.
 
-[7]
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 517--523
-[][] []
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 517--523
-
- []
-
-
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 524--529
-[][] []
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 524--529
-
- []
-
-[8]
+[7] [8]
 Overfull \hbox (2.22221pt too wide) in paragraph at lines 530--536
 [][] []
  []
@@ -597,149 +578,333 @@ Underfull \hbox (badness 10000) in paragraph at lines 530--536
  []
 
 
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 537--541
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 537--542
 [][] []
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 537--541
+Underfull \hbox (badness 10000) in paragraph at lines 537--542
 
  []
 
 
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 542--547
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 543--549
 [][] []
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 542--547
+Underfull \hbox (badness 10000) in paragraph at lines 543--549
 
  []
 
 
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 548--553
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 550--554
 [][] []
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 548--553
+Underfull \hbox (badness 10000) in paragraph at lines 550--554
 
  []
 
 
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 554--559
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 555--560
 [][] []
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 554--559
+Underfull \hbox (badness 10000) in paragraph at lines 555--560
 
  []
 
 
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 560--566
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 561--566
 [][] []
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 560--566
+Underfull \hbox (badness 10000) in paragraph at lines 561--566
 
  []
 
 
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 567--574
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 567--572
 [][] []
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 567--574
+Underfull \hbox (badness 10000) in paragraph at lines 567--572
 
  []
 
 
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 575--581
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 573--579
 [][] []
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 575--581
+Underfull \hbox (badness 10000) in paragraph at lines 573--579
 
  []
 
 
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 582--588
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 580--587
 [][] []
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 582--588
-
- []
-
-
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 589--596
-[][] []
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 589--596
-
- []
-
-
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 597--603
-[][] []
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 597--603
-
- []
-
-
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 604--610
-[][] []
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 604--610
-
- []
-
-
-Overfull \hbox (2.22221pt too wide) in paragraph at lines 611--615
-[][] []
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 611--615
+Underfull \hbox (badness 10000) in paragraph at lines 580--587
 
  []
 
 [9]
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 588--594
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 588--594
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 595--601
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 595--601
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 602--609
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 602--609
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 610--616
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 610--616
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 617--623
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 617--623
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 624--628
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 624--628
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 629--633
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 629--633
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 634--638
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 634--638
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 639--646
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 639--646
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 647--652
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 647--652
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 653--659
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 653--659
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 660--667
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 660--667
+
+ []
+
+[10]
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 668--674
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 668--674
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 675--680
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 675--680
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 685--685
+[]\T1/lmr/m/n/10 Urban, M. C. Ac-cel-er-at-ing ex-tinc-tion risk from cli-mate change. \T1/lmr/m/it/10 Sci-ence \T1/lmr/m/n/10 (2015)
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 681--686
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 681--686
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 687--692
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 687--692
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 693--698
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 693--698
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 699--705
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 699--705
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 706--711
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 706--711
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 712--717
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 712--717
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 718--723
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 718--723
+
+ []
+
+
+Overfull \hbox (2.22221pt too wide) in paragraph at lines 724--729
+[][] []
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 724--729
+
+ []
+
 
 Package natbib Warning: There were undefined citations.
 
-[10] (./manscript_biosciences.aux)
+[11] (./manscript_biosciences.aux)
 
 LaTeX Warning: There were undefined references.
 
 Package rerunfilecheck Info: File `manscript_biosciences.out' has not changed.
-(rerunfilecheck)             Checksum: 67201F2F24835097FF988BB83E07AFAD;2303.
+(rerunfilecheck)             Checksum: A1DC10E5689223C1406366990A45B22C;3486.
  ) 
 Here is how much of TeX's memory you used:
- 11632 strings out of 480313
- 181271 string characters out of 5897047
- 476200 words of memory out of 5000000
- 29254 multiletter control sequences out of 15000+600000
+ 11665 strings out of 480313
+ 182080 string characters out of 5897047
+ 478490 words of memory out of 5000000
+ 29262 multiletter control sequences out of 15000+600000
  457982 words of font info for 64 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 70i,6n,76p,552b,401s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 70i,6n,76p,558b,397s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/home/millie/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}</home/millie/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></home/millie/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr10.pfb></home/millie/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr12.pfb></home/millie/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr7.pfb></home/millie/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmri10.pfb></home/millie/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmri7.pfb></home/millie/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmri8.pfb></home/millie/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmss8.pfb>
-Output written on manscript_biosciences.pdf (10 pages, 204374 bytes).
+Output written on manscript_biosciences.pdf (11 pages, 216115 bytes).
 PDF statistics:
- 192 PDF objects out of 1000 (max. 8388607)
- 162 compressed objects within 2 object streams
- 50 named destinations out of 1000 (max. 500000)
- 89 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 248 PDF objects out of 1000 (max. 8388607)
+ 216 compressed objects within 3 object streams
+ 75 named destinations out of 1000 (max. 500000)
+ 121 words of extra memory for PDF output out of 10000 (max. 10000000)
 
