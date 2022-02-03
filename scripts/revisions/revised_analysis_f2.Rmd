@@ -1,17 +1,18 @@
 ---
 title: "updated-analysis"
-output: html_document
+output: github_document
 ---
-# to-do:
+
+Load libraries
 
 ```{r}
 library(sf)
 library(tidyverse)
 library(raster)
-library(ggpubr)
+#library(ggpubr)
 library(lsr) # includes t-test functions
 library(stats) # includes different t-test functions
-library(rio) # for importing data
+#library(rio) # for importing data
 library(psych) # for descriptives
 library(pwr) # for conducting a power analysis
 library(zoo)
@@ -101,82 +102,67 @@ fee <- fee %>%
 
 ```
 
+
 # Figure 2:
 
 ```{r}
 fee_fig <- fee %>%
+mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
   filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
-  dplyr::select(Category,carbon_vulnerable,richness_all:RSR_all, area, Date_Est) %>%
+  dplyr::select(Category,carbon_vulnerable,richness_all:RSR_all, future, area, Date_Est) %>%
   dplyr::rename(`Species Richness` = richness_all,
-         `Range-size rarity` = RSR_all,
-         `CRENVU richness` =  richness_crenvu)
+         `Vulnerable Carbon` = carbon_vulnerable,
+         `CRENVU Richness` =  richness_crenvu, 
+         `Future Richness` = future)
 ```
 
-```{r fig.width=3, fig.height=6, dpi= 300}
+```{r fig.width=6, fig.height=3, dpi= 300}
 fig2b <- easements %>%
-  dplyr::select(Category,carbon_vulnerable,richness_all:RSR_all, Date_Est, area) %>%
+  mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
+  dplyr::select(Category,carbon_vulnerable,richness_all:RSR_all, future, Date_Est, area) %>%
   dplyr::rename(`Species Richness` = richness_all,
-         `Range-size rarity` = RSR_all,
-         `CRENVU richness` =  richness_crenvu) %>%
+         `Vulnerable Carbon` = carbon_vulnerable,
+         `CRENVU Richness` =  richness_crenvu,
+         `Future Richness` = future) %>%
   drop_na() %>%
   rbind(fee_fig) %>%
   mutate(time = ifelse(Date_Est <2000, NA, 
                        ifelse(Date_Est > 1999 & Date_Est < 2010, "2000-2009", "2010-2019"))) %>%
   drop_na() %>%
-  dplyr::select(-c(Date_Est, area, carbon_vulnerable)) %>%
+  dplyr::select(-c(Date_Est, area, RSR_all)) %>%
   pivot_longer(-c(Category, time)) %>%
+  mutate(name = factor(name, levels = c("Species Richness", 
+                                        "CRENVU Richness",
+                                        "Vulnerable Carbon",
+                                        "Future Richness"))) %>%
   ggplot(aes(x = time, y = value, col = Category)) + geom_boxplot() +
   theme_classic() +
   scale_color_manual(values=c("#0072B2", "#E69F00")) +
-  facet_wrap(vars(name), ncol = 1, scales = "free") +
+  facet_wrap(vars(name), ncol = 4, scales = "free") +
   theme_classic() +
   theme(legend.position = "none") +
   theme(axis.title.x = element_blank()) +
-  labs(y = "mean value per parcel")
+  labs(y = "mean value per parcel") 
 fig2b
 ```
 
-```{r fig.width=3, fig.height=3, dpi= 300}
-fee_fig_C <- fee_fig %>%
-  dplyr::select(Category,carbon_vulnerable, Date_Est, area)
-
-fig3b <- easements %>%
-  dplyr::rename(`Species Richness` = richness_all,
-         `Range-size rarity` = RSR_all,
-         `CRENVU richness` =  richness_crenvu) %>%
-  dplyr::select(Category,carbon_vulnerable, Date_Est, area) %>%
-  drop_na() %>%
-  rbind(fee_fig_C) %>%
-  mutate(time = ifelse(Date_Est <2000, NA, 
-                       ifelse(Date_Est > 1999 & Date_Est < 2010, "2000-2009", "2010-2019"))) %>%
-  drop_na() %>%
-  dplyr::select(-c(Date_Est, area)) %>%
-  pivot_longer(-c(Category, time)) %>%
-  ggplot(aes(x = time, y = value, col = Category)) + geom_boxplot() +
-  theme_classic() +
-  scale_color_manual(values=c("#0072B2", "#E69F00")) +
-  theme_classic() +
-  theme(legend.position = "none") +
-  theme(axis.title.x = element_blank()) +
-  labs(y = "mean vulnerable carbon density \n (MgC) per parcel")
-fig3b
-```
 
 ```{r}
 # easements already filtered to GAP1-2 before extraction 
 ag_e <- easements %>%
+    mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
   mutate(Category = "easement") %>%
   group_by(Category) %>%
   mutate(total_area = sum(area)) %>%
   ungroup() %>%
   mutate(perc_area = area/total_area) %>%
   mutate(richness_all = richness_all*perc_area,
-         RSR_all = RSR_all*perc_area,
+         future = future*perc_area,
          richness_crenvu= richness_crenvu*perc_area,
          carbon_vulnerable = carbon_vulnerable*perc_area) %>%
   group_by(Category, total_area) %>%
   summarise(richness_all = sum(richness_all, na.rm = TRUE),
-         RSR_all = sum(RSR_all, na.rm = TRUE),
+         future = sum(future, na.rm = TRUE),
          richness_crenvu= sum(richness_crenvu, na.rm = TRUE),
          carbon_vulnerable = sum(carbon_vulnerable, na.rm = TRUE)) %>%
   ungroup()
@@ -185,18 +171,19 @@ ag_e <- easements %>%
 ```{r}
 ag_f <- fee %>%
   filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
+      mutate(future = reptile_future + amphibian_future + bird_future + mammal_future) %>%
     mutate(Category = "fee") %>%
   group_by(Category) %>%
   mutate(total_area = sum(area)) %>%
   ungroup() %>%
   mutate(perc_area = area/total_area) %>%
   mutate(richness_all = richness_all*perc_area,
-         RSR_all = RSR_all*perc_area,
+         future = future*perc_area,
          richness_crenvu= richness_crenvu*perc_area,
          carbon_vulnerable = carbon_vulnerable*perc_area) %>%
   group_by(Category, total_area) %>%
   summarise(richness_all = sum(richness_all, na.rm = TRUE),
-         RSR_all = sum(RSR_all, na.rm = TRUE),
+         future = sum(future, na.rm = TRUE),
          richness_crenvu= sum(richness_crenvu, na.rm = TRUE),
          carbon_vulnerable = sum(carbon_vulnerable, na.rm = TRUE)) %>% 
   ungroup() 
@@ -204,18 +191,19 @@ ag_f <- fee %>%
 
 ```{r}
 ag_b <- background %>%
+  mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
   mutate(bind = "a") %>%
   group_by(bind) %>%
   mutate(total_area = sum(area)) %>%
   ungroup() %>%
   mutate(perc_area = area/total_area) %>%
   mutate(richness_all = richness_all*perc_area,
-         RSR_all = RSR_all*perc_area,
+         future = future*perc_area,
          richness_crenvu= richness_crenvu*perc_area,
          carbon_vulnerable = carbon_vulnerable*perc_area) %>%
   group_by(bind) %>%
   summarise(richness_all_b = sum(richness_all, na.rm = TRUE),
-         RSR_all_b = sum(RSR_all, na.rm = TRUE),
+         future_all_b = sum(future, na.rm = TRUE),
          richness_crenvu_b= sum(richness_crenvu, na.rm = TRUE),
          carbon_vulnerable_b = sum(carbon_vulnerable, na.rm = TRUE),
          total_area_ca = sum(area)) %>% 
@@ -229,18 +217,19 @@ Public = everything fee owned any gap status
 ```{r}
 f2public <- fee %>%
   filter(Category == "fee") %>%
+  mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
   mutate(Category = recode(Category, fee = "Public")) %>%
   group_by(Category) %>%
   mutate(total_area_public = sum(area)) %>%
   ungroup() %>%
   mutate(perc_area = area/total_area_public) %>%
   mutate(richness_all = richness_all*perc_area,
-         RSR_all = RSR_all*perc_area,
+         future = future*perc_area,
          richness_crenvu= richness_crenvu*perc_area,
          carbon_vulnerable = carbon_vulnerable*perc_area) %>%
   group_by(Category, total_area_public) %>%
   summarise(richness_all = sum(richness_all, na.rm = TRUE),
-         RSR_all = sum(RSR_all, na.rm = TRUE),
+         future = sum(future, na.rm = TRUE),
          richness_crenvu = sum(richness_crenvu, na.rm = TRUE),
          carbon_vulnerable = sum(carbon_vulnerable, na.rm = TRUE)) %>% 
   ungroup() 
@@ -252,7 +241,7 @@ f2private <- f2public %>%
   cbind(ag_b) %>%
   mutate(area_private = total_area_ca-total_area_public) %>%
   mutate(richness_all = ((richness_all_b*total_area_ca)-(richness_all*total_area_public))/(area_private),
-         RSR_all = ((RSR_all_b*total_area_ca)-(RSR_all*total_area_public))/(area_private),
+         future = ((future_all_b*total_area_ca)-(future*total_area_public))/(area_private),
          richness_crenvu = ((richness_crenvu_b*total_area_ca)-(richness_crenvu*total_area_public))/(area_private),
          carbon_vulnerable = ((carbon_vulnerable_b*total_area_ca)-(carbon_vulnerable*total_area_public))/(area_private)) %>%
   dplyr::select(richness_all:carbon_vulnerable, area_private) %>%
@@ -269,19 +258,19 @@ public_private <- f2public %>%
   mutate(bind= "a") %>%
   full_join(ag_b) %>%
   dplyr::mutate(`Species Richness` = (richness_all-richness_all_b)/richness_all_b,
-                `Range-size Rarity`  = (RSR_all-RSR_all_b)/RSR_all_b,
+                `Future Richness (2100; RCP 8.5)`  = (future-future_all_b)/future_all_b,
                 `CRENVU Richness` = (richness_crenvu-richness_crenvu_b)/richness_crenvu_b,
-                carbon_vulnerable = (carbon_vulnerable-carbon_vulnerable_b)/carbon_vulnerable_b) %>%
-  dplyr::select(`Species Richness`:`CRENVU Richness`, carbon_vulnerable, Category) %>%
+                `Vulnerable Carbon` = (carbon_vulnerable-carbon_vulnerable_b)/carbon_vulnerable_b) %>%
+  dplyr::select(`Species Richness`,`CRENVU Richness`, `Future Richness (2100; RCP 8.5)`, `Vulnerable Carbon`, Category) %>%
   pivot_longer(-Category) %>%
+  mutate(name = factor(name, levels = c("Species Richness", 
+                                        "CRENVU Richness",
+                                        "Vulnerable Carbon",
+                                        "Future Richness"))) %>%
   mutate(type = Category) %>%
   mutate(Category = plyr::revalue(Category, c(Private = "easement", Public = "fee") ))
 ```
 
-```{r}
-public_private <- public_private %>%
-  filter(name != "carbon_vulnerable")
-```
 
 
 ```{r fig.height = 6, fig.width = 3, dpi = 300}
@@ -291,11 +280,15 @@ fig2a <- ag_e %>%
   full_join(ag_b) %>%
   dplyr::select(-c(bind, total_area_ca)) %>%
   dplyr::mutate(`Species Richness` = (richness_all-richness_all_b)/richness_all_b,
-                `Range-size Rarity` = (RSR_all-RSR_all_b)/RSR_all_b,
+                `Future Richness (2100; RCP 8.5)` = (future-future_all_b)/future_all_b,
                 `CRENVU Richness` = (richness_crenvu-richness_crenvu_b)/richness_crenvu_b,
-                carbon_vulnerable = (carbon_vulnerable-carbon_vulnerable_b)/carbon_vulnerable_b) %>% 
-  dplyr::select(Category,`Species Richness`:`CRENVU Richness`) %>%
+                `Vulnerable Carbon` = (carbon_vulnerable-carbon_vulnerable_b)/carbon_vulnerable_b) %>% 
+  dplyr::select(Category,`Species Richness`, `CRENVU Richness`,`Future Richness (2100; RCP 8.5)`, `Vulnerable Carbon`) %>%
   pivot_longer(-Category) %>%
+  mutate(name = factor(name, levels = c("Species Richness", 
+                                        "CRENVU Richness",
+                                        "Vulnerable Carbon",
+                                        "Future Richness"))) %>%
   ggplot(aes(x = Category, y = value*100, fill = Category)) + 
   geom_bar(stat = "identity") +
     scale_fill_manual(values=c("#0072B2", "#E69F00", "black", "black")) +
@@ -304,775 +297,443 @@ fig2a <- ag_e %>%
                                            shape= type), stat = "identity", 
              position=position_dodge(width=0.8), size = 3) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  facet_wrap(vars(name), ncol = 1) +
+  facet_wrap(vars(name), scales = "free", ncol = 4) +
+  scale_y_continuous(limits=c(-50,40)) +
   theme_classic() +
   theme(legend.position = "none") +
   theme(axis.title.x = element_blank()) +
   labs(y = "% difference from national mean value")
 ```
 
-```{r fig2, fig.width=6, fig.height=6, dpi = 300}
+```{r fig2, fig.width=8, fig.height=6, dpi = 300}
 library(patchwork)
-fig2a + fig2b
+fig2a/fig2b
 ```
-# Carbon
 
-```{r carbon-figure, fig.height = 3, fig.width = 6, dpi = 300}
-public_private_carbon <- f2public %>%
-  rename(area = total_area_public) %>%
-  rbind(f2private) %>%
-  mutate(bind= "a") %>%
-  full_join(ag_b) %>%
-  dplyr::mutate(richness_all = (richness_all-richness_all_b)/richness_all_b,
-                RSR_all = (RSR_all-RSR_all_b)/RSR_all_b,
-                richness_crenvu = (richness_crenvu-richness_crenvu_b)/richness_crenvu_b,
-                carbon_vulnerable = (carbon_vulnerable-carbon_vulnerable_b)/carbon_vulnerable_b) %>%
-  dplyr::select(carbon_vulnerable, Category) %>%
-  pivot_longer(-Category) %>%
-  mutate(type = Category) %>%
-  mutate(Category = plyr::revalue(Category, c(Private = "easement", Public = "fee") ))
-
-fig3a <- ag_e %>%
-  rbind(ag_f) %>%
-  mutate(bind = "a") %>%
-  full_join(ag_b) %>%
-  dplyr::mutate(richness_all = (richness_all-richness_all_b)/richness_all_b,
-                RSR_all = (RSR_all-RSR_all_b)/RSR_all_b,
-                richness_crenvu = (richness_crenvu-richness_crenvu_b)/richness_crenvu_b,
-                carbon_vulnerable = (carbon_vulnerable-carbon_vulnerable_b)/carbon_vulnerable_b) %>% 
-  dplyr::select(Category,carbon_vulnerable) %>%
-  pivot_longer(-Category) %>%
-  ggplot(aes(x = Category, y = value*100, fill = Category)) + 
-  geom_bar(stat = "identity") +
-    scale_fill_manual(values=c("#0072B2", "#E69F00", "black", "black")) +
-  geom_point(public_private_carbon, mapping = aes(x = Category, y= as.numeric(value)*100,  
-                                           group = type, 
-                                           shape= type), stat = "identity", 
-             position=position_dodge(width=0.8), size = 3) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  theme_classic() +
-  theme(legend.position = "none") +
-  theme(axis.title.x = element_blank()) +
-  labs(y = "% difference from \n national mean carbon density")
-
-fig3a + fig3b + plot_annotation(tag_levels = 'A')
-```
 
 # BIVARIATE MAP!
 
-
 ```{r}
-# easements already filtered to GAP1-2 before extraction 
-ag_e <- easements %>%
-  mutate(Category = "easement") %>%
-  group_by(Category, State_Nm) %>%
-  mutate(total_area = sum(area)) %>%
-  ungroup() %>%
-  mutate(perc_area = area/total_area) %>%
-  mutate(richness_all = richness_all*perc_area,
-         RSR_all = RSR_all*perc_area,
-         richness_crenvu= richness_crenvu*perc_area,
-         carbon_vulnerable = carbon_vulnerable*perc_area) %>%
-  group_by(Category, State_Nm, total_area) %>%
-  summarise(richness_all = sum(richness_all, na.rm = TRUE),
-         RSR_all = sum(RSR_all, na.rm = TRUE),
-         richness_crenvu= sum(richness_crenvu, na.rm = TRUE),
-         carbon_vulnerable = sum(carbon_vulnerable, na.rm = TRUE)) %>%
-  ungroup()
-```
+# The function that produces the colour matrix
+colmat <- function(nbreaks = 3, breakstyle = "quantile",
+                   upperleft = "#0096EB", upperright = "#820050", 
+                   bottomleft = "#BEBEBE", bottomright = "#FFE60F",
+                   xlab = "x label", ylab = "y label", plotLeg = TRUE,
+                   saveLeg = FALSE) {
+   # TODO - replace any tidyr, dplyr etc. functions with data.table #
+  library(tidyverse)
+  require(ggplot2)
+  require(classInt)
+  library(data.table)
+  if (breakstyle == "sd") {
+    warning("SD breaks style cannot be used.\nWill not always return the correct number of breaks.\nSee classInt::classIntervals() for details.\nResetting to quantile",
+            call. = FALSE, immediate. = FALSE)
+    breakstyle <- "quantile"}
+  # The colours can be changed by changing the HEX codes for:
+  # upperleft, upperright, bottomleft, bottomright
+  # From http://www.joshuastevens.net/cartography/make-a-bivariate-choropleth-map/
+  # upperleft = "#64ACBE", upperright = "#574249", bottomleft = "#E8E8E8", bottomright = "#C85A5A",
+  # upperleft = "#BE64AC", upperright = "#3B4994", bottomleft = "#E8E8E8", bottomright = "#5AC8C8",
+  # upperleft = "#73AE80", upperright = "#2A5A5B", bottomleft = "#E8E8E8", bottomright = "#6C83B5", 
+  # upperleft = "#9972AF", upperright = "#804D36", bottomleft = "#E8E8E8", bottomright = "#C8B35A",
+  # upperleft = "#DA8DC8", upperright = "#697AA2", bottomleft = "#E8E8E8", bottomright = "#73BCA0",
+  # Similar to Teuling, Stockli, Seneviratnea (2011) [https://doi.org/10.1002/joc.2153]
+  # upperleft = "#F7900A", upperright = "#993A65", bottomleft = "#44B360", bottomright = "#3A88B5",
+  # Viridis style
+  # upperleft = "#FEF287", upperright = "#21908D", bottomleft = "#E8F4F3", bottomright = "#9874A1",
+  # Similar to Fjeldsa, Bowie, Rahbek 2012
+  # upperleft = "#34C21B", upperright = "#FFFFFF", bottomleft = "#595757",  bottomright = "#A874B8",
+  # Default from original source
+  # upperleft = "#0096EB", upperright = "#820050", bottomleft= "#BEBEBE", bottomright = "#FFE60F",
+  my.data <- seq(0, 1, .01)
+  # Default uses terciles (Lucchesi and Wikle [2017] doi: 10.1002/sta4.150)
+  my.class <- classInt::classIntervals(my.data,
+                                       n = nbreaks,
+                                       style = breakstyle,
+                                       )
+  my.pal.1 <- classInt::findColours(my.class, c(upperleft, bottomleft))
+  my.pal.2 <- classInt::findColours(my.class, c(upperright, bottomright))
+  col.matrix <- matrix(nrow = 101, ncol = 101, NA)
+  for (i in 1:101) {
+    my.col <- c(paste(my.pal.1[i]), paste(my.pal.2[i]))
+    col.matrix[102 - i, ] <- classInt::findColours(my.class, my.col)
+  }
+  ## need to convert this to data.table at some stage.
+  col.matrix.plot <- col.matrix %>%
+    as.data.frame(.) %>% 
+    mutate("Y" = row_number()) %>%
+    mutate_at(.tbl = ., .vars = vars(starts_with("V")), .funs = list(as.character)) %>% 
+    pivot_longer(data = ., cols = -Y, names_to = "X", values_to = "HEXCode") %>% 
+    mutate("X" = as.integer(sub("V", "", .$X))) %>%
+    distinct(as.factor(HEXCode), .keep_all = TRUE) %>%
+    mutate(Y = rev(.$Y)) %>% 
+    dplyr::select(-c(4)) %>%
+    mutate("Y" = rep(seq(from = 1, to = nbreaks, by = 1), each = nbreaks),
+           "X" = rep(seq(from = 1, to = nbreaks, by = 1), times = nbreaks)) %>%
+    mutate("UID" = row_number())
+  # Use plotLeg if you want a preview of the legend
+  if (plotLeg) {
+    p <- ggplot(col.matrix.plot, aes(X, Y, fill = HEXCode)) +
+      geom_tile() +
+      scale_fill_identity() +
+      coord_equal(expand = FALSE) +
+      theme_void() +
+      theme(aspect.ratio = 1,
+            axis.title = element_text(size = 10, colour = "black",hjust = 0.5, 
+                                      vjust = 1),
+            axis.title.y = element_text(size = 10, angle = 90, hjust = 0.5, vjust = 1)) +
+      xlab(bquote(.(xlab) ~  symbol("\256"))) +
+      ylab(bquote(.(ylab) ~  symbol("\256")))
+    print(p)
+    assign(
+      x = "BivLegend",
+      value = p,
+      pos = .GlobalEnv
+    )
+  }
+  # Use saveLeg if you want to save a copy of the legend
+  if (saveLeg) {
+    ggsave(filename = "bivLegend.pdf", plot = p, device = "pdf",
+           path = "./", width = 4, height = 4, units = "in",
+           dpi = 300)
+  }
+  seqs <- seq(0, 100, (100 / nbreaks))
+  seqs[1] <- 1
+  col.matrix <- col.matrix[c(seqs), c(seqs)]
+  attr(col.matrix, "breakstyle") <- breakstyle
+  attr(col.matrix, "nbreaks") <- nbreaks
+  return(col.matrix)
+}
 
-```{r}
-ag_f <- fee %>%
-  filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
-    mutate(Category = "fee") %>%
-  group_by(Category, State_Nm) %>%
-  mutate(total_area = sum(area)) %>%
-  ungroup() %>%
-  mutate(perc_area = area/total_area) %>%
-  mutate(richness_all = richness_all*perc_area,
-         RSR_all = RSR_all*perc_area,
-         richness_crenvu= richness_crenvu*perc_area,
-         carbon_vulnerable = carbon_vulnerable*perc_area) %>%
-  group_by(Category, State_Nm, total_area) %>%
-  summarise(richness_all = sum(richness_all, na.rm = TRUE),
-         RSR_all = sum(RSR_all, na.rm = TRUE),
-         richness_crenvu= sum(richness_crenvu, na.rm = TRUE),
-         carbon_vulnerable = sum(carbon_vulnerable, na.rm = TRUE)) %>% 
-  ungroup() 
-```
-
-```{r}
-ag_b <- background %>%
-  rename(State_Nm = "STATE") %>%
-  dplyr::select(State_Nm, richness_all:RSR_all, carbon_vulnerable, area) %>%
-  rename(richness_all_b = richness_all,
-         carbon_vulnerable_b = carbon_vulnerable)
-```
-
-```{r}
-bivar_map_background <- ag_e %>%
-  rbind(ag_f) %>%
-  left_join(ag_b, by = "State_Nm")  %>%
-  mutate(richness_all = (richness_all-richness_all_b)/richness_all_b,
-         carbon_vulnerable= (carbon_vulnerable-carbon_vulnerable_b)/carbon_vulnerable_b) %>%
-  dplyr::select(Category, State_Nm, richness_all, carbon_vulnerable)
-```
-
-```{r}
-bivar_map_compar <- ag_e %>%
-  mutate(richness_e = richness_all,
-         carbon_e = carbon_vulnerable) %>%
-  dplyr::select(State_Nm, richness_e, carbon_e) %>%
-  left_join(ag_f) %>%
-  mutate(richness = ifelse(richness_e-richness_all >0,1,0),
-         carbon = ifelse(carbon_e-carbon_vulnerable>0,1,0)) %>%
-  dplyr::select(State_Nm, richness, carbon)
-```
-
-```{r}
-background_shp <- states(cb = FALSE) %>%
-  rename(State_Nm = STUSPS) %>%
-  st_transform(crs= st_crs(2163))
-```
-
-```{r}
-subnational_map = bi_class(bivar_map_compar, x = richness, y = carbon, style = "quantile", dim = 2)
-
-subnational_map <- subnational_map %>%
-  left_join(background_shp)
-```
-
-```{r}
-subnational_map_main <- ggplot() +
-  geom_sf(data = subnational_map, mapping = aes(fill = bi_class, geometry= geometry), color = "black", size = 0.1, show.legend = FALSE) +
-  coord_sf(crs = st_crs(2163), xlim = c(-2350000, 3000000), ylim = c(-2300000, 
-         730000))+ theme_minimal() +
-  theme(panel.border = element_rect(colour = "black", fill=NA)) +
-  bi_scale_fill(pal = "DkCyan", dim = 2) +
-  bi_theme() + theme(panel.border = element_rect(colour = "black", fill=NA))
-
-
-
-legend <- bi_legend(pal = "DkCyan",
-                    dim = 2,
-                    xlab = "Higher richness in easements",
-                    ylab = "Higher carbon in easements",
-                    size = 4)
-```
-```{r legend, fig.width= 4, fig.height=4, dpi = 300}
-legend
-```
-
-```{r}
-AK_HI <- subnational_map %>%
-  dplyr::select(NAME, bi_class) 
-USA <- st_read("../data/US_shp/s_11au16.shp") %>%
-  left_join(AK_HI)
-```
-
-```{r}
-alaska <- ggplot() +
-    geom_sf(data = USA,  aes(fill = bi_class), color = "black", size = 0.1, show.legend = FALSE)+
-     coord_sf(crs = st_crs(3467), xlim = c(-2400000, 1600000), ylim = c(200000, 
-         2500000), expand = FALSE, datum = NA) +theme_minimal() +
-   theme(panel.border = element_rect(colour = "black", fill=NA)) +
-  bi_scale_fill(pal = "DkCyan", dim = 2) +
-  bi_theme() +  theme(panel.border = element_rect(colour = "black", fill=NA))
-
-
-hawaii  <- ggplot() +
-    geom_sf(data = USA, aes(fill = bi_class),color = "black", size = 0.1, show.legend = FALSE)+
-     coord_sf(crs = st_crs(4135), xlim = c(-161, -154), ylim = c(18, 
-         23), expand = FALSE, datum = NA) +theme_minimal() +
-     theme(panel.border = element_rect(colour = "black", fill=NA)) +
-  bi_scale_fill(pal = "DkCyan", dim = 2) +
-  bi_theme() + theme(panel.border = element_rect(colour = "black", fill=NA))
-```
-
-```{r, fig.height= 5, fi.width = 5, dpi = 600}
-a<-subnational_map_main +
- annotation_custom(
-      grob = ggplotGrob(alaska),
-      xmin = -2800000,
-      xmax = -2750000 + (1600000 - (-2400000))/2.5,
-      ymin = -2450000,
-      ymax = -2450000 + (2500000 - 200000)/2.5
-  ) +
-  annotation_custom(
-      grob = ggplotGrob(hawaii),
-      xmin = -1250000,
-      xmax = -1250000 + (-154 - (-161))*120000,
-      ymin = -2450000,
-      ymax = -2450000 + (23 - 18)*120000
-  ) 
-```
-
-```{r figure5, fig.height=5, fig.width=6, dpi = 400}
-a
-```
-
-public-private by state
-
-```{r}
-f2public <- fee %>%
-  filter(Category == "fee") %>%
-  mutate(Category = recode(Category, fee = "Public")) %>%
-  group_by(Category, State_Nm) %>%
-  mutate(total_area_public = sum(area)) %>%
-  ungroup() %>%
-  mutate(perc_area = area/total_area_public) %>%
-  mutate(richness_all = richness_all*perc_area,
-         RSR_all = RSR_all*perc_area,
-         richness_crenvu= richness_crenvu*perc_area,
-         carbon_vulnerable = carbon_vulnerable*perc_area) %>%
-  group_by(Category, total_area_public) %>%
-  summarise(richness_all = sum(richness_all, na.rm = TRUE),
-         RSR_all = sum(RSR_all, na.rm = TRUE),
-         richness_crenvu = sum(richness_crenvu, na.rm = TRUE),
-         carbon_vulnerable = sum(carbon_vulnerable, na.rm = TRUE)) %>% 
-  ungroup() 
+# Function to assign colour-codes to raster data
+# As before, by default assign tercile breaks
+bivariate.map <- function(rasterx, rastery, colourmatrix = col.matrix,
+                          export.colour.matrix = TRUE,
+                          outname = paste0("colMatrix_rasValues", names(rasterx))) {
+  # TO DO - replace raster with terra #
+  require(raster)
+  require(classInt)
+  # export.colour.matrix will export a data.frame of rastervalues and RGB codes 
+  # to the global environment outname defines the name of the data.frame
+  quanx <- getValues(rasterx)
+  tempx <- data.frame(quanx, quantile = rep(NA, length(quanx)))
+  brks <- with(tempx, classIntervals(quanx,
+                                    n = attr(colourmatrix, "nbreaks"),
+                                    style = attr(colourmatrix, "breakstyle"))$brks)
+  ## Add (very) small amount of noise to all but the first break
+  ## https://stackoverflow.com/a/19846365/1710632
+  brks[-1] <- brks[-1] + seq_along(brks[-1]) * .Machine$double.eps
+  r1 <- within(tempx, quantile <- cut(quanx,
+                                     breaks = brks,
+                                     labels = 2:length(brks),
+                                     include.lowest = TRUE))
+  quantr <- data.frame(r1[, 2])
+  quany <- getValues(rastery)
+  tempy <- data.frame(quany, quantile = rep(NA, length(quany)))
+  brksy <- with(tempy, classIntervals(quany,
+                                     n = attr(colourmatrix, "nbreaks"),
+                                     style = attr(colourmatrix, "breakstyle"))$brks)
+  brksy[-1] <- brksy[-1] + seq_along(brksy[-1]) * .Machine$double.eps
+  r2 <- within(tempy, quantile <- cut(quany,
+                                     breaks = brksy,
+                                     labels = 2:length(brksy),
+                                     include.lowest = TRUE
+  ))
+  quantr2 <- data.frame(r2[, 2])
+  as.numeric.factor <- function(x) {
+    as.numeric(levels(x))[x]
+  }
+  col.matrix2 <- colourmatrix
+  cn <- unique(colourmatrix)
+  for (i in 1:length(col.matrix2)) {
+    ifelse(is.na(col.matrix2[i]),
+           col.matrix2[i] <- 1, col.matrix2[i] <- which(
+             col.matrix2[i] == cn
+           )[1]
+    )
+  }
+  # Export the colour.matrix to data.frame() in the global env
+  # Can then save with write.table() and use in ArcMap/QGIS
+  # Need to save the output raster as integer data-type
+  if (export.colour.matrix) {
+    # create a dataframe of colours corresponding to raster values
+    exportCols <- as.data.frame(cbind(
+      as.vector(col.matrix2), as.vector(colourmatrix),
+      t(col2rgb(as.vector(colourmatrix)))
+    ))
+    # rename columns of data.frame()
+    colnames(exportCols)[1:2] <- c("rasValue", "HEX")
+    # Export to the global environment
+    assign(
+      x = outname,
+      value = exportCols,
+      pos = .GlobalEnv
+    )
+  }
+  cols <- numeric(length(quantr[, 1]))
+  for (i in 1:length(quantr[, 1])) {
+    a <- as.numeric.factor(quantr[i, 1])
+    b <- as.numeric.factor(quantr2[i, 1])
+    cols[i] <- as.numeric(col.matrix2[b, a])
+  }
+  r <- rasterx
+  r[1:length(r)] <- cols
+  return(r)
+}
 ```
 
 ```{r}
-f2private <- f2public %>%
-  dplyr::select(-Category) %>%
-  cbind(ag_b) %>%
-  mutate(area_private = total_area_ca-total_area_public) %>%
-  mutate(richness_all = ((richness_all_b*total_area_ca)-(richness_all*total_area_public))/(area_private),
-         RSR_all = ((RSR_all_b*total_area_ca)-(RSR_all*total_area_public))/(area_private),
-         richness_crenvu = ((richness_crenvu_b*total_area_ca)-(richness_crenvu*total_area_public))/(area_private),
-         carbon_vulnerable = ((carbon_vulnerable_b*total_area_ca)-(carbon_vulnerable*total_area_public))/(area_private)) %>%
-  dplyr::select(richness_all:carbon_vulnerable, area_private) %>%
-  mutate(Category = "Private") %>%
-  rename(area = area_private)
-```
+#### TESTS ####
+library(data.table)
+library(raster)
+library(classInt)
 
-public private
+#carbon_vulnerable <- raster("../data/carbon/Vulnerable_Carbon_2010/Vulnerable_C_Total_2010.tif")
+richness_all <- raster("../data/IUCN-precalculated/Richness_all.tif")
 
-```{r}
-public_private <- f2public %>%
-  rename(area = total_area_public) %>%
-  rbind(f2private) %>%
-  mutate(bind= "a") %>%
-  full_join(ag_b) %>%
-  dplyr::mutate(`Species Richness` = (richness_all-richness_all_b)/richness_all_b,
-                `Range-size Rarity`  = (RSR_all-RSR_all_b)/RSR_all_b,
-                `CRENVU Richness` = (richness_crenvu-richness_crenvu_b)/richness_crenvu_b,
-                carbon_vulnerable = (carbon_vulnerable-carbon_vulnerable_b)/carbon_vulnerable_b) %>%
-  dplyr::select(`Species Richness`:`CRENVU Richness`, carbon_vulnerable, Category) %>%
-  pivot_longer(-Category) %>%
-  mutate(type = Category) %>%
-  mutate(Category = plyr::revalue(Category, c(Private = "easement", Public = "fee") ))
+#carbon_vulnerable_rs <- resample(carbon_vulnerable, richness_all, method = 'bilinear')
+#writeRaster(carbon_vulnerable_rs, "../data/carbon/Vulnerable_Carbon_2010/Vulnerable_C_Total_2010_rs.tif")
+carbon_vulnerable_rs <- raster("../data/carbon/Vulnerable_Carbon_2010/Vulnerable_C_Total_2010_rs.tif")
+US_main <- US %>%
+  filter(STATE != "AK" & STATE != "HI")
+richness_all <- mask(richness_all, US_main)
+carbon_vulnerable_rs <- mask(carbon_vulnerable_rs, US_main)
+
 ```
 
 ```{r}
-public_private <- public_private %>%
-  filter(name != "carbon_vulnerable")
-```
-
-
-## With Lawler Data
-
-```{r}
-f2e <- easements %>%
-  group_by(Category) %>%
-  mutate(total_area = sum(area)) %>%
-  ungroup() %>%
-  mutate(perc_area = area/total_area) %>%
-  mutate(reptiles = reptile_future*perc_area,
-         amphibians = amphibian_future*perc_area,
-         mammals= mammal_future*perc_area,
-         birds = bird_future*perc_area,
-         trees = tree_future*perc_area,
-         plants = plant_future*perc_area) %>%
-  group_by(Category) %>%
-  summarise(reptiles = sum(reptiles, na.rm = TRUE),
-         amphibians = sum(amphibians, na.rm = TRUE),
-         mammals= sum(mammals, na.rm = TRUE),
-         birds = sum(birds, na.rm = TRUE),
-         trees = sum(trees, na.rm = TRUE),
-         plants = sum(plants, na.rm = TRUE))
+carbon_vulnerable_rs <- mask(carbon_vulnerable_rs, richness_all)
 ```
 
 ```{r}
-f2f <- fee %>%
-  filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
-  group_by(Category) %>%
-  mutate(total_area = sum(area)) %>%
-  ungroup() %>%
-  mutate(perc_area = area/total_area) %>%
-  mutate(reptiles = reptile_future*perc_area,
-         amphibians = amphibian_future*perc_area,
-         mammals= mammal_future*perc_area,
-         birds = bird_future*perc_area,
-         trees = tree_future*perc_area,
-         plants = plant_future*perc_area) %>%
-  group_by(Category) %>%
-  summarise(reptiles = sum(reptiles, na.rm = TRUE),
-         amphibians = sum(amphibians, na.rm = TRUE),
-         mammals= sum(mammals, na.rm = TRUE),
-         birds = sum(birds, na.rm = TRUE),
-         trees = sum(trees, na.rm = TRUE),
-         plants = sum(plants, na.rm = TRUE))
+r <- stack(richness_all, carbon_vulnerable_rs)
+names(r) <- c("Biodiversity","Carbon")
+r <- crop(r, US_main)
+```
+
+```{r cache=TRUE}
+# Define the number of breaks
+nBreaks <- 5
+
+# Create the colour matrix
+col.matrixQ <- colmat(nbreaks = nBreaks, breakstyle = "quantile",
+                       xlab = "Carbon", ylab = "Biodiversity", 
+                       bottomright = "#77ac59", upperright = "#355149",
+                       bottomleft = "#d3d3d3", upperleft = "#5e63ae",
+                       saveLeg = FALSE, plotLeg = TRUE)
+
+
+# create the bivariate raster
+bivmapQ <- bivariate.map(rasterx = r[["Carbon"]], rastery = r[["Biodiversity"]],
+                          export.colour.matrix = TRUE,
+                          colourmatrix = col.matrixQ)
+  
+# Convert to dataframe for plotting with ggplot
+library(data.table)
+bivMapDFQ <- setDT(as.data.frame(bivmapQ, xy = TRUE))
+colnames(bivMapDFQ)[3] <- "BivValue"
+bivMapDFQ <- melt(bivMapDFQ, id.vars = c("x", "y"),
+                   measure.vars = "BivValue",
+                   value.name = "bivVal",
+                   variable.name = "Variable")
+
+# Make the map using ggplot
+map_q <- ggplot(bivMapDFQ, aes(x = x, y = y)) +
+    geom_raster(aes(fill = bivVal)) +
+      scale_fill_gradientn(colours = col.matrixQ, na.value = "transparent") + 
+    theme_minimal() + theme(panel.grid.major = element_blank(),
+                            panel.grid.minor = element_blank()) +
+    theme(text = element_text(size = 10, colour = "black")) +
+    borders(colour = "black", size = 0.1) +
+    coord_quickmap(expand = FALSE, xlim = c(-130,-65), ylim = c(24,52)) +
+    theme(legend.position = "none",
+          plot.background = element_blank(),
+          strip.text = element_blank(), 
+          axis.text.y = element_blank(),
+          axis.text = element_blank(),
+          axis.title = element_blank())
+
+map_q <- map_q + inset_element(BivLegend, 0, 0, 0.2, 0.3)
+```
+
+Bar plot Lat:
+
+```{r}
+fee_line <- read_csv("../data/fee_lat_long.csv") %>%
+  drop_na() %>% rename(x = lon, y = lat) %>%
+  filter(x > (-130), x < (-65),
+         y >22, y<52) %>%
+  mutate(x = round(x, 0),
+         y = round(y,0)) %>%
+  group_by(x) %>%
+  summarise(value = sum(area, na.rm = TRUE)) %>%
+  ungroup()  %>%
+  mutate(maxval = max(value), minval = min(value)) %>% ungroup() %>%
+  mutate(Fee = (value-minval)/(maxval-minval)) %>%
+  select(x,Fee)
+
+easement_line <- read_csv("../data/easement_lat_long.csv") %>%
+  drop_na() %>% rename(x = lon, y = lat) %>%
+  filter(x > (-130), x < (-65),
+         y >22, y<52) %>%
+  mutate(x = round(x, 0),
+         y = round(y,0)) %>%
+  group_by(x) %>%
+  summarise(value = sum(area, na.rm = TRUE)) %>%
+  ungroup()  %>%
+  mutate(maxval = max(value), minval = min(value)) %>% ungroup() %>%
+  mutate(Easement = (value-minval)/(maxval-minval)) %>%
+  select(x,Easement)
+
+line_x <- easement_line %>%
+  left_join(fee_line) %>%
+  pivot_longer(-x)
 ```
 
 ```{r}
-f2e %>%
-  rbind(f2f)
-```
-
-
-```{r}
-f2public <- fee %>%
-  dplyr::select(-Category) %>%
-  mutate(Category = "Public") %>%
-  group_by(Category) %>%
-  mutate(total_area_public = sum(area)) %>%
-  ungroup() %>%
-  mutate(perc_area = area/total_area_public) %>%
-  mutate(reptiles = reptile_future*perc_area,
-         amphibians = amphibian_future*perc_area,
-         mammals= mammal_future*perc_area,
-         birds = bird_future*perc_area,
-         trees = tree_future*perc_area,
-         plants = plant_future*perc_area) %>%
-  group_by(Category,total_area_public) %>%
-  summarise(reptiles = sum(reptiles, na.rm = TRUE),
-         amphibians = sum(amphibians, na.rm = TRUE),
-         mammals= sum(mammals, na.rm = TRUE),
-         birds = sum(birds, na.rm = TRUE),
-         trees = sum(trees, na.rm = TRUE),
-         plants = sum(plants, na.rm = TRUE)) %>% ungroup() %>%
-  mutate(aggregate = reptiles + amphibians + mammals + birds + trees + plants)
-```
-
-```{r}
-f2background <- background %>%
-  mutate(Category = "background") %>%
-  group_by(Category) %>%
-  mutate(total_area_ca = sum(area)) %>%
-  ungroup() %>%
-  mutate(perc_area = area/total_area_ca) %>%
-   mutate(reptiles = reptile_future*perc_area,
-         amphibians = amphibian_future*perc_area,
-         mammals= mammal_future*perc_area,
-         birds = bird_future*perc_area,
-         trees = tree_future*perc_area,
-         plants = plant_future*perc_area) %>%
-  group_by(Category, total_area_ca) %>%
-  summarise(reptiles_b = sum(reptiles, na.rm = TRUE),
-         amphibians_b = sum(amphibians, na.rm = TRUE),
-         mammals_b= sum(mammals, na.rm = TRUE),
-         birds_b = sum(birds, na.rm = TRUE),
-         trees_b = sum(trees, na.rm = TRUE),
-         plants_b = sum(plants, na.rm = TRUE)) %>%
-  ungroup() %>%
-  mutate(aggregate_b = reptiles_b + amphibians_b + mammals_b + birds_b + trees_b + plants_b) %>%
-  dplyr::select(-Category) %>%
-  mutate(bind = "a")
+richness_pts <- as_tibble(rasterToPoints(r[[1]])) %>%
+  drop_na() %>%
+  filter(Biodiversity >0,
+         x > (-130), x < (-65),
+         y >22, y<52) %>%
+  mutate(x = round(x, 0),
+         y = round(y,0)) %>%
+  group_by(x) %>%
+  summarise(value = mean(Biodiversity, na.rm = TRUE)) %>%
+  ungroup()  %>%
+  mutate(maxval = max(value), minval = min(value)) %>% ungroup() %>%
+  mutate(Biodiversity = (value-minval)/(maxval-minval)) %>%
+  select(x,Biodiversity)
+  
+carbon_pts <- as_tibble(rasterToPoints(r[[2]])) %>%
+  drop_na() %>%
+  filter(Carbon >0,
+         x > (-130), x < (-65),
+         y >22, y<52) %>%
+  mutate(x = round(x, 0),
+         y = round(y,0)) %>%
+  group_by(x) %>%
+  summarise(value = mean(Carbon, na.rm = TRUE)) %>%
+  ungroup()  %>%
+  mutate(maxval = max(value), minval = min(value)) %>% ungroup() %>%
+  mutate(Carbon = (value-minval)/(maxval-minval)) %>%
+  select(x, Carbon)
 ```
 
 ```{r}
-f2private <- f2public %>%
-  dplyr::select(-Category) %>%
-  cbind(f2background) %>%
-  mutate(area_private = total_area_ca-total_area_public) %>%
-  mutate(reptiles = ((reptiles_b*total_area_ca)-(reptiles*total_area_public))/(area_private),
-         amphibians = ((amphibians_b*total_area_ca)-(amphibians*total_area_public))/(area_private),
-         mammals = ((mammals_b*total_area_ca)-(mammals*total_area_public))/(area_private),
-         birds = ((birds_b*total_area_ca)-(birds*total_area_public))/(area_private),
-         trees = ((trees_b*total_area_ca)-(trees*total_area_public))/(area_private),
-         plants = ((plants_b*total_area_ca)-(plants*total_area_public))/(area_private),
-         aggregate = ((aggregate_b*total_area_ca)-(aggregate*total_area_public))/(area_private)) %>%
-  dplyr::select(reptiles:plants, aggregate, area_private) %>%
-  mutate(Category = "Private") %>%
-  rename(area = area_private)
-```
-
-public private
-
-```{r}
-public_private <- f2public %>%
-  rename(area = total_area_public) %>%
-  rbind(f2private) %>%
-  mutate(bind= "a") %>%
-  full_join(f2background) %>%
-  dplyr::mutate(reptiles = (reptiles-reptiles_b)/reptiles_b,
-                amphibians = (amphibians-amphibians_b)/amphibians_b,
-                mammals =(mammals-mammals_b)/mammals_b,
-                birds = (birds-birds_b)/birds_b,
-                trees = (trees-trees_b)/trees_b,
-                plants = (plants-plants_b)/plants_b,
-                `aggregate \n richness` = (aggregate-aggregate_b)/aggregate_b)%>%
-  dplyr::select(reptiles:plants, Category) %>%
-  pivot_longer(-Category) %>%
-  mutate(type = Category) %>%
-  mutate(Category = recode(type, Private = "conservation easement", Public = "protected area"))
-```
-
-```{r future, fig.width= 4 , fig.height=4, dpi = 300}
-fig5a <- f2e %>%
-  rbind(f2f) %>%
-  mutate(bind = "a") %>%
-  mutate(aggregate = reptiles + amphibians + mammals + birds + trees + plants) %>%
-  full_join(f2background) %>%
-  dplyr::select(-c(bind, total_area_ca)) %>%
-  dplyr::mutate(reptiles = (reptiles-reptiles_b)/reptiles_b,
-                amphibians = (amphibians-amphibians_b)/amphibians_b,
-                mammals =(mammals-mammals_b)/mammals_b,
-                birds = (birds-birds_b)/birds_b,
-                trees = (trees-trees_b)/trees_b,
-                plants = (plants-plants_b)/plants_b,
-                `aggregate \n richness` = (aggregate-aggregate_b)/aggregate_b) %>%
-  dplyr::select(Category,reptiles:plants) %>%
-  pivot_longer(-Category) %>%
-  mutate(Category = recode(Category, easement = "conservation easement", fee = "protected area")) %>%
-  ggplot(aes(x = name, y = value*100, fill = Category)) + 
-  geom_bar(stat = "identity", width=0.65,
-                                  position=position_dodge(width=0.8)) +
-    scale_fill_manual(values=c("#0072B2", "#E69F00", "black")) +
-  geom_point(public_private, mapping = aes(x = name, y= as.numeric(value)*100,  
-                                           group = type, 
-                                           shape= type), stat = "identity", 
-             position=position_dodge(width=0.8), size = 3) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
+top <- richness_pts %>%
+  left_join(carbon_pts) %>%
+  pivot_longer(-x) %>%
+  ggplot(aes(x = x, y = value, fill = name)) + 
+  geom_density(stat = "identity", adjust = 10 , alpha = 0.3, lwd = 0) + 
+  scale_fill_manual(values = c("#5e63ae", "#77ac59", "black", "black")) + xlim(-130,-65) +
+  geom_line(data = line_x, aes(x = x, y = value, linetype = name)) +
+  geom_text(data = subset(line_x, x == (-124)), aes(label = name, x = -124, y = value), hjust = 1) +
   theme_classic() +
-  theme(axis.title.y =element_blank()) +
-  theme(axis.text.y = element_text(angle = 90,hjust=0.5)) +
-  theme(legend.title = element_blank()) + coord_flip() +
-  theme(legend.position = "bottom") +
-  ylim(-75,75) +
-   theme(axis.text=element_text(size=8),
-        axis.title=element_text(size=10),
-        panel.border = element_rect(colour = "black", fill=NA),
-        legend.box.background = element_rect(colour = "black"),
-        legend.text = element_text(size = 8)) +
-  guides(shape = guide_legend(override.aes = list(size = 3))) +
-    labs(y = "% difference from national mean \n future species richness (Year 2100, RCP 8.5)") 
-fig5a
+  theme(axis.text.y=element_blank(),
+        axis.title.y=element_blank(),
+        axis.title.x = element_blank(),
+        axis.line.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none")
 ```
 
 
-## With IUCN Data
+Bar plot Long:
+```{r}
+fee_line <- read_csv("../data/fee_lat_long.csv") %>%
+  drop_na() %>% rename(x = lon, y = lat) %>%
+  filter(x > (-130), x < (-65),
+         y >22, y<52) %>%
+  mutate(x = round(x, 0),
+         y = round(y,0)) %>%
+  group_by(y) %>%
+  summarise(value = sum(area, na.rm = TRUE)) %>%
+  ungroup()  %>%
+  mutate(maxval = max(value), minval = min(value)) %>% ungroup() %>%
+  mutate(Fee = (value-minval)/(maxval-minval)) %>%
+  select(y,Fee)
+
+easement_line <- read_csv("../data/easement_lat_long.csv") %>%
+  drop_na() %>% rename(x = lon, y = lat) %>%
+  filter(x > (-130), x < (-65),
+         y >22, y<52) %>%
+  mutate(x = round(x, 0),
+         y = round(y,0)) %>%
+  group_by(y) %>%
+  summarise(value = sum(area, na.rm = TRUE)) %>%
+  ungroup()  %>%
+  mutate(maxval = max(value), minval = min(value)) %>% ungroup() %>%
+  mutate(Easement = (value-minval)/(maxval-minval)) %>%
+  select(y,Easement)
+
+line_y <- easement_line %>%
+  left_join(fee_line) %>%
+  pivot_longer(-y)
+```
 
 ```{r}
-f2e <- easements %>%
-  group_by(Category) %>%
-  mutate(total_area = sum(area)) %>%
-  ungroup() %>%
-  dplyr::select(-c(Own_Type, Mang_Type, Src_Date)) %>%
+richness_pts <- as_tibble(rasterToPoints(r[[1]])) %>%
   drop_na() %>%
-  mutate(perc_area = area/total_area) %>%
-  mutate(reptiles = replace_na(reptile_iucn, 0)*perc_area,
-         amphibians = replace_na(amphibian_iucn,0)*perc_area,
-         mammals= replace_na(mammal_iucn,0)*perc_area,
-         birds = replace_na(bird_iucn,0)*perc_area,
-         fish = replace_na(fw_iucn,0)*perc_area) %>%
-  group_by(Category) %>%
-  summarise(reptiles = sum(reptiles,na.rm = TRUE),
-         amphibians = sum(amphibians, na.rm = TRUE),
-         mammals= sum(mammals, na.rm = TRUE),
-         birds = sum(birds, na.rm = TRUE),
-         fish = sum(fish, na.rm = TRUE))
-```
-
-```{r}
-f2f <- fee %>%
-  filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
-  group_by(Category) %>%
-  mutate(total_area = sum(area)) %>%
-  ungroup() %>%
-  dplyr::select(-c(Own_Type, Mang_Type, Date_Est)) %>%
+  filter(Biodiversity >0,
+         x > (-130), x < (-65),
+         y > 22, y<52) %>%
+  mutate(x = round(x, 0),
+         y = round(y,0)) %>%
+  group_by(y) %>%
+  summarise(value = mean(Biodiversity, na.rm = TRUE)) %>%
+  ungroup()  %>%
+  mutate(maxval = max(value), minval = min(value)) %>% ungroup() %>%
+  mutate(Biodiversity = (value-minval)/(maxval-minval)) %>%
+  select(y,Biodiversity)
+  
+carbon_pts <- as_tibble(rasterToPoints(r[[2]])) %>%
   drop_na() %>%
-  mutate(perc_area = area/total_area) %>%
-  mutate(reptiles = replace_na(reptile_iucn, 0)*perc_area,
-         amphibians = replace_na(amphibian_iucn,0)*perc_area,
-         mammals= replace_na(mammal_iucn,0)*perc_area,
-         birds = replace_na(bird_iucn,0)*perc_area,
-         fish = replace_na(fw_iucn,0)*perc_area) %>%
-  group_by(Category) %>%
-  summarise(reptiles = sum(reptiles,na.rm = TRUE),
-         amphibians = sum(amphibians, na.rm = TRUE),
-         mammals= sum(mammals, na.rm = TRUE),
-         birds = sum(birds, na.rm = TRUE),
-         fish = sum(fish, na.rm = TRUE)) %>%
-  filter(Category == "Fee")
-```
+  filter(Carbon >0,
+         x > (-130), x < (-65),
+         y > 22, y<52) %>%
+  mutate(x = round(x, 0),
+         y = round(y,0)) %>%
+  group_by(y) %>%
+  summarise(value = mean(Carbon, na.rm = TRUE)) %>%
+  ungroup()  %>%
+  mutate(maxval = max(value), 
+         minval = min(value)) %>% ungroup() %>%
+  mutate(Carbon = (value-minval)/(maxval-minval)) %>%
+  select(y, Carbon)
 
-
-background, public, private
-
-```{r}
-f2public <- fee %>%
-  filter(Category == "Fee") %>%
-  mutate(Category = recode(Category, Fee = "Public")) %>%
-  group_by(Category) %>%
-  mutate(total_area = sum(area)) %>%
-  ungroup() %>%
-  dplyr::select(-c(Own_Type, Mang_Type, Date_Est)) %>%
-  drop_na() %>%
-  mutate(perc_area = area/total_area) %>%
-  mutate(reptiles = replace_na(reptile_iucn, 0)*perc_area,
-         amphibians = replace_na(amphibian_iucn,0)*perc_area,
-         mammals= replace_na(mammal_iucn,0)*perc_area,
-         birds = replace_na(bird_iucn,0)*perc_area,
-         fish = replace_na(fw_iucn,0)*perc_area) %>%
-  group_by(Category) %>%
-  summarise(reptiles = sum(reptiles,na.rm = TRUE),
-         amphibians = sum(amphibians, na.rm = TRUE),
-         mammals= sum(mammals, na.rm = TRUE),
-         birds = sum(birds, na.rm = TRUE),
-         fish = sum(fish, na.rm = TRUE),
-         area = sum(area))
-```
-
-```{r}
-f2background <- background %>%
-  mutate(Category = "background") %>%
-  group_by(Category) %>%
-  mutate(total_area = sum(area)) %>%
-  ungroup() %>%
-  mutate(perc_area = area/total_area) %>%
-  mutate(reptiles_b = replace_na(reptile_iucn, 0)*perc_area,
-         amphibians_b = replace_na(amphibian_iucn,0)*perc_area,
-         mammals_b = replace_na(mammal_iucn,0)*perc_area,
-         birds_b = replace_na(bird_iucn,0)*perc_area,
-         fish_b = replace_na(fw_iucn,0)*perc_area) %>%
-  group_by(Category) %>%
-  summarise(reptiles_b = sum(reptiles_b),
-         amphibians_b = sum(amphibians_b),
-         mammals_b = sum(mammals_b),
-         birds_b = sum(birds_b),
-         fish_b = sum(fish_b),
-         area_b = mean(total_area)) %>%
-  dplyr::select(-Category) %>%
-  mutate(richness = "richness")
-```
-
-```{r}
-f2private <- f2public %>%
-  dplyr::select(-Category) %>%
-  cbind(f2background) %>%
-  mutate(area_p = area_b-area) %>%
-  mutate(reptiles = ((reptiles_b*area_b/area_b)-(reptiles*area/area_b))/(area_p/area_b),
-         amphibians = ((amphibians_b*area_b/area_b)-(amphibians*area/area_b))/(area_p/area_b),
-         mammals = ((mammals_b*area_b/area_b)-(mammals*area/area_b))/(area_p/area_b),
-         birds = ((birds_b*area_b/area_b)-(birds*area/area_b))/(area_p/area_b),
-         fish = ((fish_b*area_b/area_b)-(fish*area/area_b))/(area_p/area_b)) %>%
-  dplyr::select(reptiles:fish, area_p) %>%
-  mutate(Category = "Private") %>%
-  rename(area = area_p)
-```
-
-public private
-
-```{r}
-public_private <- f2private %>% rbind(f2public) %>%
-  mutate(richness = "richness") %>%
-  full_join(f2background) %>%
-  mutate(reptiles = (reptiles-reptiles_b)/reptiles_b*100,
-         amphibians = (amphibians-amphibians_b)/amphibians_b*100,
-         mammals = (mammals-mammals_b)/mammals_b*100,
-         birds = (birds-birds_b)/birds_b*100,
-         fish = (fish-fish_b)/fish_b*100) %>%
-  dplyr::select(reptiles:fish, Category) %>%
-  pivot_longer(-Category)
-```
-
-```{r}
-fee_easement <- f2f %>% rbind(f2e) %>%
-  mutate(richness = "richness") %>%
-  full_join(f2background) %>%
-  mutate(reptiles = (reptiles-reptiles_b)/reptiles_b*100,
-         amphibians = (amphibians-amphibians_b)/amphibians_b*100,
-         mammals = (mammals-mammals_b)/mammals_b*100,
-         birds = (birds-birds_b)/birds_b*100,
-         fish = (fish-fish_b)/fish_b*100) %>%
-  dplyr::select(Category:fish) %>%
-  pivot_longer(-Category)
-```
-
-```{r fig.width=5, fig.height=5, dpi = 300}
-ggplot() + 
-  scale_fill_manual(values=c("#0072B2", "#E69F00")) +
-  geom_bar(fee_easement, mapping = aes(x= name, y= as.numeric(value), fill = Category),
-                                  stat = "identity", width=0.65,
-                                  position=position_dodge(width=0.8)) +
-  geom_hline(yintercept=0, linetype="dashed") +
-  #geom_point(richness_background, mapping = aes(x = name, y= value), pch = 19) +
-  geom_point(public_private, mapping = aes(x = name, y= as.numeric(value),  
-                                           group = Category, color = Category, 
-                                           shape= Category), stat = "identity", 
-             position=position_dodge(width=0.8), size = 3) +
-  scale_color_manual(values=c("black", "black")) +
-  scale_shape_manual(values=c(20,18)) +
+side <- richness_pts %>%
+  left_join(carbon_pts) %>%
+  pivot_longer(-y) %>%
+  ggplot(aes(x = y, y = value, fill = name)) + 
+  geom_density(stat = "identity", alpha = 0.3, lwd = 0) + 
+  scale_fill_manual(values = c("#5e63ae", "#77ac59", "black", "black")) + 
+  xlim(24,52) +
+  geom_line(data = line_y, aes(x = y, y = value, linetype = name)) +
+  geom_text(data = subset(line_y, y == (49)), aes(label = name, x = 49, y = value), hjust = 1, vjust = 1, angle=-90) +
   theme_classic() +
-  theme(axis.title.y =element_blank()) +
-  theme(axis.text.y = element_text(angle = 90,hjust=0.5)) +
-  theme(legend.title = element_blank()) + coord_flip() +
-  theme(legend.position = "bottom") +
-  ylim(-95,95) +
-   theme(axis.text=element_text(size=8),
-        axis.title=element_text(size=10),
-        panel.border = element_rect(colour = "black", fill=NA),
-        legend.box.background = element_rect(colour = "black"),
-        legend.text = element_text(size = 8)) +
-  guides(shape = guide_legend(override.aes = list(size = 5))) +
-    labs(y = "% difference from background mean species richness") 
+  theme(axis.text.x=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y = element_blank(),
+        axis.line.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "none") + 
+  coord_flip() 
+side
+```
+
+```{r figure4, fig.width= 8, fig.height= 6, dpi=300}
+library(patchwork)
+layout <- "
+AAAAAAAAA#
+CCCCCCCCCB
+CCCCCCCCCB
+CCCCCCCCCB
+"
+f4 <- top + side + map_q + plot_layout(design = layout)
+f4
+
 ```
 
 
 
-## By year 
-
-```{r}
-f2e <- easements %>%
-  group_by(Category) %>%
-  mutate(total_area = sum(area)) %>%
-  ungroup() %>%
-  dplyr::select(-c(Own_Type, Mang_Type, Src_Date)) %>%
-  drop_na() %>%
-  mutate(perc_area = area/total_area) %>%
-  mutate(reptiles = replace_na(reptile_iucn, 0)*perc_area,
-         amphibians = replace_na(amphibian_iucn,0)*perc_area,
-         mammals= replace_na(mammal_iucn,0)*perc_area,
-         birds = replace_na(bird_iucn,0)*perc_area,
-         fish = replace_na(fw_iucn,0)*perc_area) %>%
-  group_by(Category) %>%
-  summarise(reptiles = sum(reptiles,na.rm = TRUE),
-         amphibians = sum(amphibians, na.rm = TRUE),
-         mammals= sum(mammals, na.rm = TRUE),
-         birds = sum(birds, na.rm = TRUE),
-         fish = sum(fish, na.rm = TRUE))
-```
-
-
-## By State
-
-```{r}
-f2e <- easements %>%
-  group_by(Category, State_Nm) %>%
-  mutate(total_area = sum(area)) %>%
-  ungroup() %>% 
-  mutate(perc_area = area/total_area) %>%
-  mutate(reptiles = replace_na(reptile_iucn, 0)*perc_area,
-         amphibians = replace_na(amphibian_iucn,0)*perc_area,
-         mammals= replace_na(mammal_iucn,0)*perc_area,
-         birds = replace_na(bird_iucn,0)*perc_area,
-         fish = replace_na(fw_iucn,0)*perc_area) %>%
-  group_by(Category, State_Nm) %>%
-  summarise(reptiles = sum(reptiles,na.rm = TRUE),
-         amphibians = sum(amphibians, na.rm = TRUE),
-         mammals= sum(mammals, na.rm = TRUE),
-         birds = sum(birds, na.rm = TRUE),
-         fish = sum(fish, na.rm = TRUE))
-```
-
-```{r}
-f2f <- fee %>%
-  filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
-  group_by(Category, State_Nm) %>%
-  mutate(total_area = sum(area)) %>%
-  ungroup() %>% 
-  mutate(perc_area = area/total_area) %>%
-  mutate(reptiles = replace_na(reptile_iucn, 0)*perc_area,
-         amphibians = replace_na(amphibian_iucn,0)*perc_area,
-         mammals= replace_na(mammal_iucn,0)*perc_area,
-         birds = replace_na(bird_iucn,0)*perc_area,
-         fish = replace_na(fw_iucn,0)*perc_area) %>%
-  group_by(Category, State_Nm) %>%
-  summarise(reptiles = sum(reptiles,na.rm = TRUE),
-         amphibians = sum(amphibians, na.rm = TRUE),
-         mammals= sum(mammals, na.rm = TRUE),
-         birds = sum(birds, na.rm = TRUE),
-         fish = sum(fish, na.rm = TRUE)) %>%
-  filter(Category == "Fee")
-```
-
-```{r}
-f2public <- fee %>%
-  filter(Category == "Fee") %>%
-  mutate(Category = recode(Category, Fee = "Public")) %>%
-  group_by(Category, State_Nm) %>%
-  mutate(total_area = sum(area)) %>%
-  ungroup() %>%
-  mutate(perc_area = area/total_area) %>%
-  mutate(reptiles = replace_na(reptile_iucn, 0)*perc_area,
-         amphibians = replace_na(amphibian_iucn,0)*perc_area,
-         mammals= replace_na(mammal_iucn,0)*perc_area,
-         birds = replace_na(bird_iucn,0)*perc_area,
-         fish = replace_na(fw_iucn,0)*perc_area)  %>%
-  group_by(Category, State_Nm) %>%
-  summarise(reptiles = sum(reptiles),
-         amphibians = sum(amphibians),
-         mammals= sum(mammals),
-         birds = sum(birds),
-         fish = sum(fish),
-         area = sum(area))
-```
-
-```{r}
-f2background <- background %>%
-  rename(State_Nm = STATE) %>%
-  mutate(Category = "background") %>%
-  group_by(Category, State_Nm) %>%
-  mutate(total_area = sum(area)) %>%
-  ungroup() %>%
-  mutate(perc_area = area/total_area) %>%
- mutate(reptiles_b = replace_na(reptile_iucn, 0)*perc_area,
-         amphibians_b = replace_na(amphibian_iucn,0)*perc_area,
-         mammals_b = replace_na(mammal_iucn,0)*perc_area,
-         birds_b = replace_na(bird_iucn,0)*perc_area,
-         fish_b = replace_na(fw_iucn,0)*perc_area) %>%
-  group_by(Category, State_Nm) %>%
-  summarise(reptiles_b = sum(reptiles_b),
-         amphibians_b = sum(amphibians_b),
-         mammals_b = sum(mammals_b),
-         birds_b = sum(birds_b),
-         fish_b = sum(fish_b),
-         area_b = mean(total_area)) %>%
-  dplyr::select(-Category) %>%
-  mutate(richness = "richness")
-```
-
-```{r}
-f2private <- f2public %>%
-  dplyr::select(-Category) %>%
-  left_join(f2background, by = "State_Nm") %>%
-  mutate(area_p = area_b-area) %>%
-  mutate(reptiles = ((reptiles_b*area_b/area_b)-(reptiles*area/area_b))/(area_p/area_b),
-         amphibians = ((amphibians_b*area_b/area_b)-(amphibians*area/area_b))/(area_p/area_b),
-         mammals = ((mammals_b*area_b/area_b)-(mammals*area/area_b))/(area_p/area_b),
-         birds = ((birds_b*area_b/area_b)-(birds*area/area_b))/(area_p/area_b),
-         fish = ((fish_b*area_b/area_b)-(fish*area/area_b))/(area_p/area_b)) %>%
-  dplyr::select(reptiles:fish, area_p) %>%
-  mutate(Category = "Private") %>%
-  rename(area = area_p)
-```
-
-public private
-
-```{r}
-public_private <- f2private %>% rbind(f2public) %>%
-  mutate(richness = "richness") %>%
-  left_join(f2background, by = "State_Nm") %>%
-  mutate(reptiles = (reptiles-reptiles_b)/reptiles_b*100,
-         amphibians = (amphibians-amphibians_b)/amphibians_b*100,
-         mammals = (mammals-mammals_b)/mammals_b*100,
-         birds = (birds-birds_b)/birds_b*100,
-         fish = (fish-fish_b)/fish_b*100) %>%
-  dplyr::select(reptiles:fish, Category) %>%
-  pivot_longer(-Category)
-```
-
-```{r}
-fee_easement <- f2f %>% rbind(f2e) %>%
-  full_join(f2background, by = "State_Nm") %>%
-  mutate(reptiles = (reptiles-reptiles_b)/reptiles_b*100,
-         amphibians = (amphibians-amphibians_b)/amphibians_b*100,
-         mammals = (mammals-mammals_b)/mammals_b*100,
-         birds = (birds-birds_b)/birds_b*100,
-         fish = (fish-fish_b)/fish_b*100) %>%
-  dplyr::select(Category.x:fish) %>%
-  pivot_longer(-c(Category.x, State_Nm))
-```

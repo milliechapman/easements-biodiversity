@@ -67,38 +67,7 @@ fw_iucn <- raster("../data/richness_rasters/fw_richness.tif")
 ```
 
 
-```{r}
-carbon_vulnerable_pts <- resample(carbon_vulnerable, richness_all, method = 'bilinear')
 
-richness_pts <- rasterToPoints(richness_all)
-carbon_pts <- rasterToPoints(carbon_vulnerable_pts)
-richness_pts <- as_tibble(richness_pts)
-
-plot(richness_all)
-dfx <- as.tibble(carbon_pts) %>%
-  left_join(richness_pts) %>%
-  pivot_longer(-c(x,y)) %>%
-  mutate(x = round(x, 0)) %>%
-  group_by(x, name) %>% 
-  summarise(value = mean(value, na.rm = TRUE)) %>%
-  ungroup() 
-
-dfx %>% ggplot(aes(x = x, y = value, fill = name)) + 
-  geom_bar(stat = "identity", alpha = 0.5) + 
-  theme_classic()
-
-dfy <- as.tibble(carbon_pts) %>%
-  left_join(richness_pts) %>%
-  pivot_longer(-c(x,y)) %>%
-  mutate(y = round(y, 0)) %>%
-  group_by(y, name) %>% 
-  summarise(value = mean(value, na.rm = TRUE)) %>%
-  ungroup() 
-
-dfy %>% ggplot(aes(x = y, y = value, fill = name)) + 
-  geom_bar(stat = "identity") + 
-  theme_classic()
-```
 
 # make function
 
@@ -535,4 +504,463 @@ background_extract %>%
   write_csv("../data/summary_richness/fbackground_extract.csv")
 ```
 
+# Centroid
+R1
+```{r}
+sf::sf_use_s2(FALSE)
+fee_R1 <- st_read("../data/PADUS/PAD_R1/PADUS2_1Fee_Region1.shp")
+fee_R1 <- fee_R1 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R1)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>2) %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(area = as.numeric(area)) %>%
+  filter(area > 1)
+fee_R1 <- fee_R1 %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+fee_R1 <- as_tibble(fee_R1) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+
+easement_R1 <- st_read("../data/PADUS/PAD_R1/PADUS2_1Easement_Region1.shp")
+easement_R1 <- easement_R1 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R1)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) %>%
+  mutate(area = st_area(geometry)) 
+easement_R1 <- easement_R1 %>%
+  mutate(area = as.numeric(area)) %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+easement_R1 <- as_tibble(easement_R1) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+```
+
+```{r}
+fee_R2 <- st_read("../data/PADUS/PAD_R2/PADUS2_1Fee_Region2.shp")
+fee_R2 <- fee_R2 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R2)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) %>%
+  mutate(area = st_area(geometry)) 
+fee_R2 <- fee_R2 %>%
+  mutate(area = as.numeric(area)) %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+fee_R2 <- as_tibble(fee_R2) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+
+easement_R2 <- st_read("../data/PADUS/PAD_R2/PADUS2_1Easement_Region2.shp")
+easement_R2 <- easement_R2 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R2)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) %>%
+  mutate(area = st_area(geometry)) 
+easement_R2 <- easement_R2 %>%
+  mutate(area = as.numeric(area)) %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+easement_R2 <- as_tibble(easement_R2) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+```
+
+```{r}
+fee_R3 <- st_read("../data/PADUS/PAD_R3/PADUS2_1Fee_Region3.shp")
+fee_R3 <- fee_R3 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R3)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>2) %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(area = as.numeric(area)) %>%
+  filter(area > 1)
+fee_R3 <- fee_R3 %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+fee_R3 <- as_tibble(fee_R3) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+
+easement_R3 <- st_read("../data/PADUS/PAD_R3/PADUS2_1Easement_Region3.shp")
+easement_R3 <- easement_R3 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R3)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) %>%
+  mutate(area = st_area(geometry)) 
+easement_R3 <- easement_R3 %>%
+  mutate(area = as.numeric(area)) %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+easement_R3 <- as_tibble(easement_R3) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+```
+
+```{r}
+fee_R4 <- st_read("../data/PADUS/PAD_R4/PADUS2_1Fee_Region4.shp")
+fee_R4 <- fee_R4 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R4)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>2) %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(area = as.numeric(area)) %>%
+  filter(area > 1)
+fee_R4 <- fee_R4 %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+fee_R4 <- as_tibble(fee_R4) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+
+easement_R4 <- st_read("../data/PADUS/PAD_R4/PADUS2_1Easement_Region4.shp")
+easement_R4 <- easement_R4 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R4)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) %>%
+  mutate(area = st_area(geometry)) 
+easement_R4 <- easement_R4 %>%
+  mutate(area = as.numeric(area)) %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+easement_R4 <- as_tibble(easement_R4) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+```
+
+
+```{r}
+fee_R5 <- st_read("../data/PADUS/PAD_R5/PADUS2_1Fee_Region5.shp")
+fee_R5 <- fee_R5 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R5)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>2) %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(area = as.numeric(area)) %>%
+  filter(area > 1)
+fee_R5 <- fee_R5 %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+fee_R5 <- as_tibble(fee_R5) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+
+easement_R5 <- st_read("../data/PADUS/PAD_R5/PADUS2_1Easement_Region5.shp")
+easement_R5 <- easement_R5 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R5)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) %>%
+  mutate(area = st_area(geometry)) 
+easement_R5 <- easement_R5 %>%
+  mutate(area = as.numeric(area)) %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+easement_R5 <- as_tibble(easement_R5) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+```
+
+```{r}
+fee_R6 <- st_read("../data/PADUS/PAD_R6/PADUS2_1Fee_Region6.shp")
+fee_R6 <- fee_R6 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R6)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>2) %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(area = as.numeric(area)) %>%
+  filter(area > 1)
+fee_R6 <- fee_R6 %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+fee_R6 <- as_tibble(fee_R6) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+
+easement_R6 <- st_read("../data/PADUS/PAD_R6/PADUS2_1Easement_Region6.shp")
+easement_R6 <- easement_R6 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R6)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) %>%
+  mutate(area = st_area(geometry)) 
+easement_R6 <- easement_R6 %>%
+  mutate(area = as.numeric(area)) %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+easement_R6 <- as_tibble(easement_R6) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+```
+
+```{r}
+fee_R7 <- st_read("../data/PADUS/PAD_R7/PADUS2_1Fee_Region7.shp")
+fee_R7 <- fee_R7 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R7)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>2) %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(area = as.numeric(area)) %>%
+  filter(area > 1)
+fee_R7 <- fee_R7 %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+fee_R7 <- as_tibble(fee_R7) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+
+easement_R7 <- st_read("../data/PADUS/PAD_R7/PADUS2_1Easement_Region7.shp")
+easement_R7 <- easement_R7 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R7)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>10) %>%
+  mutate(area = st_area(geometry)) 
+easement_R7 <- easement_R7 %>%
+  mutate(area = as.numeric(area)) %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+easement_R7 <- as_tibble(easement_R7) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+```
+
+```{r}
+fee_R8 <- st_read("../data/PADUS/PAD_R8/PADUS2_1Fee_Region8.shp")
+fee_R8 <- fee_R8 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R8)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>2) %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(area = as.numeric(area)) %>%
+  filter(area > 1)
+fee_R8 <- fee_R8 %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+fee_R8 <- as_tibble(fee_R8) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+
+easement_R8 <- st_read("../data/PADUS/PAD_R8/PADUS2_1Easement_Region8.shp")
+easement_R8 <- easement_R8 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R8)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) %>%
+  mutate(area = st_area(geometry)) 
+easement_R8 <- easement_R8 %>%
+  mutate(area = as.numeric(area)) %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+easement_R8 <- as_tibble(easement_R8) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+```
+```{r}
+fee_R9 <- st_read("../data/PADUS/PAD_R9/PADUS2_1Fee_Region9.shp")
+fee_R9 <- fee_R9 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R9)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>2) %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(area = as.numeric(area)) %>%
+  filter(area > 1)
+fee_R9 <- fee_R9 %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+fee_R9 <- as_tibble(fee_R9) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+
+easement_R9 <- st_read("../data/PADUS/PAD_R9/PADUS2_1Easement_Region9.shp")
+easement_R9 <- easement_R9 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R9)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) %>%
+  mutate(area = st_area(geometry)) 
+easement_R9 <- easement_R9 %>%
+  mutate(area = as.numeric(area)) %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+easement_R9 <- as_tibble(easement_R9) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+```
+
+```{r}
+fee_R10 <- st_read("../data/PADUS/PAD_R10/PADUS2_1Fee_Region10.shp")
+fee_R10 <- fee_R10 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R10)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>2) %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(area = as.numeric(area)) %>%
+  filter(area > 1)
+fee_R10 <- fee_R10 %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+fee_R10 <- as_tibble(fee_R10) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+
+easement_R10 <- st_read("../data/PADUS/PAD_R10/PADUS2_1Easement_Region10.shp")
+easement_R10 <- easement_R10 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R10)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) %>%
+  mutate(area = st_area(geometry)) 
+easement_R10 <- easement_R10 %>%
+  mutate(area = as.numeric(area)) %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+easement_R10 <- as_tibble(easement_R10) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+```
+
+```{r}
+fee_R11 <- st_read("../data/PADUS/PAD_R11/PADUS2_1Fee_Region11.shp")
+fee_R11 <- fee_R11 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R11)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>2) %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(area = as.numeric(area)) %>%
+  filter(area > 1)
+fee_R11 <- fee_R11 %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+fee_R11 <- as_tibble(fee_R11) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+
+easement_R11 <- st_read("../data/PADUS/PAD_R11/PADUS2_1Easement_Region11.shp")
+easement_R11 <- easement_R11 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R11)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) %>%
+  mutate(area = st_area(geometry)) 
+easement_R11 <- easement_R11 %>%
+  mutate(area = as.numeric(area)) %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+easement_R11 <- as_tibble(easement_R11) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+```
+
+```{r}
+fee_R12 <- st_read("../data/PADUS/PAD_R12/PADUS2_1Fee_Region12.shp")
+fee_R12 <- fee_R12 %>%
+  dplyr::mutate(valid =st_is_valid(fee_R12)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>2) %>%
+  mutate(area = st_area(geometry)) %>%
+  mutate(area = as.numeric(area)) %>%
+  filter(area > 1)
+fee_R12 <- fee_R12 %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+fee_R12 <- as_tibble(fee_R12) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+
+easement_R12 <- st_read("../data/PADUS/PAD_R12/PADUS2_1Easement_Region12.shp")
+easement_R12 <- easement_R12 %>%
+  dplyr::mutate(valid =st_is_valid(easement_R12)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(GIS_Acres>1) %>%
+  mutate(area = st_area(geometry)) 
+easement_R12 <- easement_R12 %>%
+  mutate(area = as.numeric(area)) %>%
+  select(GAP_Sts, Category, area) %>%
+  st_transform(crs = crs(r[[1]])) %>%
+  st_centroid() %>%
+  dplyr::mutate(lon = sf::st_coordinates(.)[,1],
+                lat = sf::st_coordinates(.)[,2]) 
+easement_R12 <- as_tibble(easement_R12) %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  select(GAP_Sts, Category, area, lon, lat)
+```
+
+```{r}
+easements_line <- rbind(easement_R1, easement_R2,easement_R3, easement_R4, 
+                        easement_R5, easement_R6, easement_R7,
+                        easement_R8, easement_R9, easement_R10, 
+                        easement_R11, easement_R12)
+write_csv(easements_line, "../data/easement_lat_long.csv")
+
+fee_line <- rbind(fee_R1, fee_R2,fee_R3, fee_R4, 
+                        fee_R5, fee_R6, fee_R7,
+                        fee_R8, fee_R9, fee_R10, 
+                        fee_R11, fee_R12)
+write_csv(fee_line, "../data/fee_lat_long.csv")
+```
 
