@@ -1,113 +1,100 @@
----
-title: "updated-analysis"
-output: github_document
----
+updated-analysis
+================
 
 Load libraries
 
-```{r}
+``` r
 library(sf)
+```
+
+    ## Linking to GEOS 3.8.0, GDAL 3.0.4, PROJ 6.3.1; sf_use_s2() is TRUE
+
+``` r
 library(tidyverse)
+```
+
+    ## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──
+
+    ## ✓ ggplot2 3.3.5     ✓ purrr   0.3.4
+    ## ✓ tibble  3.1.6     ✓ dplyr   1.0.7
+    ## ✓ tidyr   1.1.4     ✓ stringr 1.4.0
+    ## ✓ readr   2.1.1     ✓ forcats 0.5.1
+
+    ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+    ## x dplyr::filter() masks stats::filter()
+    ## x dplyr::lag()    masks stats::lag()
+
+``` r
 library(raster)
+```
+
+    ## Loading required package: sp
+
+    ## 
+    ## Attaching package: 'raster'
+
+    ## The following object is masked from 'package:dplyr':
+    ## 
+    ##     select
+
+``` r
 #library(ggpubr)
 library(lsr) # includes t-test functions
 library(stats) # includes different t-test functions
 #library(rio) # for importing data
 library(psych) # for descriptives
+```
+
+    ## 
+    ## Attaching package: 'psych'
+
+    ## The following objects are masked from 'package:ggplot2':
+    ## 
+    ##     %+%, alpha
+
+``` r
 library(pwr) # for conducting a power analysis
 library(zoo)
+```
+
+    ## 
+    ## Attaching package: 'zoo'
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     as.Date, as.Date.numeric
+
+``` r
 library(biscale)
 library(tigris)
+```
+
+    ## To enable 
+    ## caching of data, set `options(tigris_use_cache = TRUE)` in your R script or .Rprofile.
+
+``` r
 library(ggsignif)
 library(ggpubr)
 ```
 
+    ## 
+    ## Attaching package: 'ggpubr'
+
+    ## The following object is masked from 'package:raster':
+    ## 
+    ##     rotate
+
 # Regional data with extracted richness values
 
-Background 
-
-```{r message=FALSE, include=FALSE}
-background <- read_csv("../data/summary_richness/fbackground_extract.csv") %>%
-  dplyr::select(STUSPS, mammal_mean:area) %>%
-  dplyr::rename(STATE = STUSPS)
-```
-
-```{r message=FALSE, include=FALSE}
-US <- st_read("../data/US_shp/s_11au16.shp")
-```
+Background
 
 Easements
 
-```{r warning=FALSE, message=FALSE, include = FALSE, cache=TRUE}
-easements1 <- read_csv("../data/summary_richness/easement_R1_extract.csv")
-easements2 <- read_csv("../data/summary_richness/easement_R2_extract.csv")
-easements3 <- read_csv("../data/summary_richness/easement_R3_extract.csv")
-easements4 <- read_csv("../data/summary_richness/easement_R4_extract.csv")
-easements5 <- read_csv("../data/summary_richness/easement_R5_extract.csv")
-easements6 <- read_csv("../data/summary_richness/easement_R6_extract.csv")
-easements7 <- read_csv("../data/summary_richness/easement_R7_extract.csv")
-easements8 <- read_csv("../data/summary_richness/easement_R8_extract.csv")
-easements9 <- read_csv("../data/summary_richness/easement_R9_extract.csv")
-easements10 <- read_csv("../data/summary_richness/easement_R10_extract.csv")
-easements11 <- read_csv("../data/summary_richness/easement_R11_extract.csv")
-easements12 <- read_csv("../data/summary_richness/easement_R12_extract.csv")
-
-easements <- rbind(easements1, easements2,easements3, easements4, easements5, easements6, easements7,
-                   easements8, easements9, easements10, easements11, easements12)
-rm(easements1, easements2,easements3, easements4, easements5, easements6, easements7,
-                   easements8, easements9, easements10, easements11, easements12)
-
-easements <- easements %>%
-  dplyr::select(Category, Mang_Type, Des_Tp, State_Nm, Date_Est, Access_Dt, GAP_Sts,EHoldTyp, Loc_Ds, Own_Type,
-         mammal_mean:area) %>% 
-  filter(Des_Tp == "CONE") # %>%
- # filter(Own_Type == "PVT" | Own_Type == "NGO" | Own_Type == "UNK" | Own_Type == "TRIB") %>%
-    # mutate(Category = "easement")
-
-
-  #filter(Loc_Ds != "National Park" &  Loc_Ds != "National Monument" &
-  #       Loc_Ds != "National Scenic Riverway" &
-    #       Loc_Ds != "National River") 
-
-# filter(Mang_Type == "PVT" | Mang_Type == "NGO" | Mang_Type == "UNK")
-#filter(Own_Type == "PVT" | Own_Type == "NGO" | Own_Type == "UNK" | Own_Type == "TRIB" | Own_Type == "Own_Type")
-```
-
-Fee 
-
-```{r warning = FALSE, include=FALSE, cache=TRUE}
-fee1 <- read_csv("../data/summary_richness/fee_R1_extract.csv")
-fee2 <- read_csv("../data/summary_richness/fee_R2_extract.csv")
-fee3 <- read_csv("../data/summary_richness/fee_R3_extract.csv")
-fee4 <- read_csv("../data/summary_richness/fee_R4_extract.csv")
-fee5 <- read_csv("../data/summary_richness/fee_R5_extract.csv")
-fee6 <- read_csv("../data/summary_richness/fee_R6_extract.csv")
-fee7 <- read_csv("../data/summary_richness/fee_R7_extract.csv")
-fee8 <- read_csv("../data/summary_richness/fee_R8_extract.csv")
-fee9 <- read_csv("../data/summary_richness/fee_R9_extract.csv")
-fee10 <- read_csv("../data/summary_richness/fee_R10_extract.csv")
-fee11 <- read_csv("../data/summary_richness/fee_R11_extract.csv")
-fee12 <- read_csv("../data/summary_richness/fee_R12_extract.csv")
-
-fee <- rbind(fee1, fee2,fee3, fee4, fee5, fee6, fee7,
-                   fee8, fee9, fee10, fee11, fee12)
-rm(fee1, fee2,fee3, fee4, fee5, fee6, fee7,
-                   fee8, fee9, fee10, fee11, fee12)
-unique(fee$Mang_Type)
-fee <- fee %>%
-  dplyr::select(Category, Mang_Type, Des_Tp, State_Nm, Date_Est, GAP_Sts, Own_Type,
-         mammal_mean:area)  %>%
-#  dplyr::filter(Mang_Type == "FED" | Mang_Type == "STAT" | Mang_Type == "LOC") %>%
-#  dplyr::filter(Own_Type == "FED" | Own_Type == "STAT" | Own_Type == "LOC") %>%
-    mutate(Category = "fee")
-
-
-```
-
+Fee
 
 # Figure 2:
 
-```{r}
+``` r
 fee_fig <- fee %>%
 mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
   filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
@@ -118,7 +105,7 @@ mutate(future = plant_future  + tree_future + reptile_future + amphibian_future 
          `Future Richness` = future)
 ```
 
-```{r fig.width=6, fig.height=3, dpi= 300}
+``` r
 fig2b <- easements %>%
   mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
   dplyr::select(Category,carbon_vulnerable,richness_all:RSR_all, future, Date_Est, area) %>%
@@ -149,8 +136,9 @@ fig2b <- easements %>%
 fig2b
 ```
 
+![](revised_analysis_f2_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
-```{r}
+``` r
 # easements already filtered to GAP1-2 before extraction 
 ag_e <- easements %>%
     mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
@@ -171,7 +159,9 @@ ag_e <- easements %>%
   ungroup()
 ```
 
-```{r}
+    ## `summarise()` has grouped output by 'Category'. You can override using the `.groups` argument.
+
+``` r
 ag_f <- fee %>%
   filter(GAP_Sts == 1 | GAP_Sts == 2) %>%
       mutate(future = reptile_future + amphibian_future + bird_future + mammal_future) %>%
@@ -192,7 +182,9 @@ ag_f <- fee %>%
   ungroup() 
 ```
 
-```{r}
+    ## `summarise()` has grouped output by 'Category'. You can override using the `.groups` argument.
+
+``` r
 ag_b <- background %>%
   mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
   mutate(bind = "a") %>%
@@ -217,7 +209,7 @@ public-private
 
 Public = everything fee owned any gap status
 
-```{r}
+``` r
 f2public <- fee %>%
   filter(Category == "fee") %>%
   mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
@@ -238,7 +230,9 @@ f2public <- fee %>%
   ungroup() 
 ```
 
-```{r}
+    ## `summarise()` has grouped output by 'Category'. You can override using the `.groups` argument.
+
+``` r
 f2private <- f2public %>%
   dplyr::select(-Category) %>%
   cbind(ag_b) %>%
@@ -254,7 +248,7 @@ f2private <- f2public %>%
 
 public private
 
-```{r}
+``` r
 public_private <- f2public %>%
   rename(area = total_area_public) %>%
   rbind(f2private) %>%
@@ -274,9 +268,9 @@ public_private <- f2public %>%
   mutate(Category = plyr::revalue(Category, c(Private = "easement", Public = "fee") ))
 ```
 
+    ## Joining, by = "bind"
 
-
-```{r fig.height = 6, fig.width = 3, dpi = 300}
+``` r
 fig2a <- ag_e %>%
   rbind(ag_f) %>%
   mutate(bind = "a") %>%
@@ -309,15 +303,28 @@ fig2a <- ag_e %>%
   labs(y = "% difference from national mean value")
 ```
 
-```{r fig2, fig.width=8, fig.height=6, dpi = 300}
+    ## Joining, by = "bind"
+
+``` r
 library(patchwork)
+```
+
+    ## 
+    ## Attaching package: 'patchwork'
+
+    ## The following object is masked from 'package:raster':
+    ## 
+    ##     area
+
+``` r
 fig2a/fig2b + plot_annotation(tag_levels = 'A') + plot_layout(guides = "collect") & theme(legend.position = "bottom")
 ```
 
+![](revised_analysis_f2_files/figure-gfm/fig2-1.png)<!-- -->
 
 # BIVARIATE MAP!
 
-```{r}
+``` r
 # The function that produces the colour matrix
 colmat <- function(nbreaks = 3, breakstyle = "quantile",
                    upperleft = "#0096EB", upperright = "#820050", 
@@ -486,8 +493,7 @@ bivariate.map <- function(rasterx, rastery, colourmatrix = col.matrix,
 }
 ```
 
-
-```{r}
+``` r
 if (!file.exists("../data/carbon-biodiv-bivariate.tif")) {
   #carbon_vulnerable <- raster("../data/carbon/Vulnerable_Carbon_2010/Vulnerable_C_Total_2010.tif")
   richness_all <- raster("../data/IUCN-precalculated/Richness_all.tif")
@@ -511,7 +517,7 @@ r <- stack(biodiv, carbon)
 names(r) <- c("Biodiversity","Carbon")
 ```
 
-```{r cache=TRUE}
+``` r
 # Define the number of breaks
 nBreaks <- 5
 
@@ -521,8 +527,28 @@ col.matrixQ <- colmat(nbreaks = nBreaks, breakstyle = "quantile",
                        bottomright = "#77ac59", upperright = "#355149",
                        bottomleft = "#d3d3d3", upperleft = "#5e63ae",
                        saveLeg = FALSE, plotLeg = TRUE)
+```
 
+    ## Loading required package: classInt
 
+    ## 
+    ## Attaching package: 'data.table'
+
+    ## The following object is masked from 'package:raster':
+    ## 
+    ##     shift
+
+    ## The following objects are masked from 'package:dplyr':
+    ## 
+    ##     between, first, last
+
+    ## The following object is masked from 'package:purrr':
+    ## 
+    ##     transpose
+
+![](revised_analysis_f2_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
+``` r
 # create the bivariate raster
 if (!file.exists("../data/bivmapQ.tif")) {
   bivmapQ <- bivariate.map(rasterx = r[["Carbon"]], rastery = r[["Biodiversity"]],
@@ -562,7 +588,7 @@ map_q <- map_q + inset_element(BivLegend, 0, 0, 0.2, 0.3)
 
 Bar plot Lat:
 
-```{r}
+``` r
 fee_line <- read_csv("../data/fee_lat_long.csv") %>%
   drop_na() %>% 
   filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
@@ -577,7 +603,20 @@ fee_line <- read_csv("../data/fee_lat_long.csv") %>%
   mutate(maxval = max(value), minval = min(value)) %>% ungroup() %>%
   mutate(Fee = (value-minval)/(maxval-minval)) %>%
   dplyr::select(x,Fee)
+```
 
+    ## Rows: 190738 Columns: 5
+
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (1): Category
+    ## dbl (4): GAP_Sts, area, lon, lat
+
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
 public_line <- read_csv("../data/fee_lat_long.csv") %>%
   drop_na() %>% 
   rename(x = lon, y = lat) %>%
@@ -591,7 +630,20 @@ public_line <- read_csv("../data/fee_lat_long.csv") %>%
   mutate(maxval = max(value), minval = min(value)) %>% ungroup() %>%
   mutate(Public = (value-minval)/(maxval-minval)) %>%
   dplyr::select(x,Public)
+```
 
+    ## Rows: 190738 Columns: 5
+
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (1): Category
+    ## dbl (4): GAP_Sts, area, lon, lat
+
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
 easement_line <- read_csv("../data/easement_lat_long.csv") %>%
   drop_na() %>% rename(x = lon, y = lat) %>%
   filter(x > (-130), x < (-65),
@@ -604,13 +656,26 @@ easement_line <- read_csv("../data/easement_lat_long.csv") %>%
   mutate(maxval = max(value), minval = min(value)) %>% ungroup() %>%
   mutate(Easement = (value-minval)/(maxval-minval)) %>%
   dplyr::select(x,Easement)
+```
 
+    ## Rows: 45735 Columns: 5
+
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (1): Category
+    ## dbl (4): GAP_Sts, area, lon, lat
+
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
 line_x <- public_line %>%
   #left_join(fee_line) %>%
   pivot_longer(-x)
 ```
 
-```{r}
+``` r
 richness_pts <- as_tibble(rasterToPoints(r[[1]])) %>%
   drop_na() %>%
   filter(Biodiversity >0,
@@ -640,7 +705,7 @@ carbon_pts <- as_tibble(rasterToPoints(r[[2]])) %>%
   dplyr::select(x, Carbon)
 ```
 
-```{r}
+``` r
 top <- richness_pts %>%
   left_join(carbon_pts) %>%
   pivot_longer(-x) %>%
@@ -658,9 +723,13 @@ top <- richness_pts %>%
         legend.position = "none")
 ```
 
+    ## Joining, by = "x"
+
+    ## Warning: Ignoring unknown parameters: adjust
 
 Bar plot Long:
-```{r}
+
+``` r
 fee_line <- read_csv("../data/fee_lat_long.csv") %>%
   drop_na() %>% rename(x = lon, y = lat) %>%
   filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
@@ -674,7 +743,20 @@ fee_line <- read_csv("../data/fee_lat_long.csv") %>%
   mutate(maxval = max(value), minval = min(value)) %>% ungroup() %>%
   mutate(Fee = (value-minval)/(maxval-minval)) %>%
   dplyr::select(y,Fee)
+```
 
+    ## Rows: 190738 Columns: 5
+
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (1): Category
+    ## dbl (4): GAP_Sts, area, lon, lat
+
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
 public_line <- read_csv("../data/fee_lat_long.csv") %>%
   drop_na() %>% 
   rename(x = lon, y = lat) %>%
@@ -688,8 +770,20 @@ public_line <- read_csv("../data/fee_lat_long.csv") %>%
   mutate(maxval = max(value), minval = min(value)) %>% ungroup() %>%
   mutate(Public = (value-minval)/(maxval-minval)) %>%
   dplyr::select(y,Public)
+```
 
+    ## Rows: 190738 Columns: 5
 
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (1): Category
+    ## dbl (4): GAP_Sts, area, lon, lat
+
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
 easement_line <- read_csv("../data/easement_lat_long.csv") %>%
   drop_na() %>% rename(x = lon, y = lat) %>%
   filter(x > (-130), x < (-65),
@@ -702,13 +796,26 @@ easement_line <- read_csv("../data/easement_lat_long.csv") %>%
   mutate(maxval = max(value), minval = min(value)) %>% ungroup() %>%
   mutate(Easement = (value-minval)/(maxval-minval)) %>%
   dplyr::select(y,Easement)
+```
 
+    ## Rows: 45735 Columns: 5
+
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (1): Category
+    ## dbl (4): GAP_Sts, area, lon, lat
+
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
 line_y <- public_line %>%
   #left_join(fee_line) %>%
   pivot_longer(-y)
 ```
 
-```{r}
+``` r
 richness_pts <- as_tibble(rasterToPoints(r[[1]])) %>%
   drop_na() %>%
   filter(Biodiversity >0,
@@ -755,10 +862,17 @@ side <- richness_pts %>%
         axis.ticks.x = element_blank(),
         legend.position = "none") + 
   coord_flip() 
+```
+
+    ## Joining, by = "y"
+
+``` r
 side
 ```
 
-```{r figure4, fig.width= 8, fig.height= 6, dpi=300}
+![](revised_analysis_f2_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+``` r
 library(patchwork)
 layout <- "
 AAAAAAAAAAAA##
@@ -768,8 +882,6 @@ CCCCCCCCCCCCBB
 "
 f4 <- top + side + map_q + plot_layout(design = layout)
 f4
-
 ```
 
-
-
+![](revised_analysis_f2_files/figure-gfm/figure4-1.png)<!-- -->

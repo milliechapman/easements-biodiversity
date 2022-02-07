@@ -523,7 +523,7 @@ fee_R1 <- fee_R1 %>%
   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
                 lat = sf::st_coordinates(.)[,2]) 
 fee_R1 <- as_tibble(fee_R1) %>%
-  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  #filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
   select(GAP_Sts, Category, area, lon, lat)
 
 easement_R1 <- st_read("../data/PADUS/PAD_R1/PADUS2_1Easement_Region1.shp")
@@ -559,7 +559,7 @@ fee_R2 <- fee_R2 %>%
   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
                 lat = sf::st_coordinates(.)[,2]) 
 fee_R2 <- as_tibble(fee_R2) %>%
-  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  #filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
   select(GAP_Sts, Category, area, lon, lat)
 
 easement_R2 <- st_read("../data/PADUS/PAD_R2/PADUS2_1Easement_Region2.shp")
@@ -596,7 +596,7 @@ fee_R3 <- fee_R3 %>%
   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
                 lat = sf::st_coordinates(.)[,2]) 
 fee_R3 <- as_tibble(fee_R3) %>%
-  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  #filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
   select(GAP_Sts, Category, area, lon, lat)
 
 easement_R3 <- st_read("../data/PADUS/PAD_R3/PADUS2_1Easement_Region3.shp")
@@ -633,7 +633,7 @@ fee_R4 <- fee_R4 %>%
   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
                 lat = sf::st_coordinates(.)[,2]) 
 fee_R4 <- as_tibble(fee_R4) %>%
-  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  #filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
   select(GAP_Sts, Category, area, lon, lat)
 
 easement_R4 <- st_read("../data/PADUS/PAD_R4/PADUS2_1Easement_Region4.shp")
@@ -671,7 +671,7 @@ fee_R5 <- fee_R5 %>%
   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
                 lat = sf::st_coordinates(.)[,2]) 
 fee_R5 <- as_tibble(fee_R5) %>%
-  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  #filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
   select(GAP_Sts, Category, area, lon, lat)
 
 easement_R5 <- st_read("../data/PADUS/PAD_R5/PADUS2_1Easement_Region5.shp")
@@ -708,7 +708,7 @@ fee_R6 <- fee_R6 %>%
   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
                 lat = sf::st_coordinates(.)[,2]) 
 fee_R6 <- as_tibble(fee_R6) %>%
-  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  #filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
   select(GAP_Sts, Category, area, lon, lat)
 
 easement_R6 <- st_read("../data/PADUS/PAD_R6/PADUS2_1Easement_Region6.shp")
@@ -745,7 +745,7 @@ fee_R7 <- fee_R7 %>%
   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
                 lat = sf::st_coordinates(.)[,2]) 
 fee_R7 <- as_tibble(fee_R7) %>%
-  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  #filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
   select(GAP_Sts, Category, area, lon, lat)
 
 easement_R7 <- st_read("../data/PADUS/PAD_R7/PADUS2_1Easement_Region7.shp")
@@ -782,7 +782,7 @@ fee_R8 <- fee_R8 %>%
   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
                 lat = sf::st_coordinates(.)[,2]) 
 fee_R8 <- as_tibble(fee_R8) %>%
-  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  #filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
   select(GAP_Sts, Category, area, lon, lat)
 
 easement_R8 <- st_read("../data/PADUS/PAD_R8/PADUS2_1Easement_Region8.shp")
@@ -818,7 +818,7 @@ fee_R9 <- fee_R9 %>%
   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
                 lat = sf::st_coordinates(.)[,2]) 
 fee_R9 <- as_tibble(fee_R9) %>%
-  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  #filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
   select(GAP_Sts, Category, area, lon, lat)
 
 easement_R9 <- st_read("../data/PADUS/PAD_R9/PADUS2_1Easement_Region9.shp")
@@ -855,7 +855,7 @@ fee_R10 <- fee_R10 %>%
   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
                 lat = sf::st_coordinates(.)[,2]) 
 fee_R10 <- as_tibble(fee_R10) %>%
-  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  #filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
   select(GAP_Sts, Category, area, lon, lat)
 
 easement_R10 <- st_read("../data/PADUS/PAD_R10/PADUS2_1Easement_Region10.shp")
@@ -892,7 +892,7 @@ fee_R11 <- fee_R11 %>%
   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
                 lat = sf::st_coordinates(.)[,2]) 
 fee_R11 <- as_tibble(fee_R11) %>%
-  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  #filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
   select(GAP_Sts, Category, area, lon, lat)
 
 easement_R11 <- st_read("../data/PADUS/PAD_R11/PADUS2_1Easement_Region11.shp")
@@ -929,7 +929,7 @@ fee_R12 <- fee_R12 %>%
   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
                 lat = sf::st_coordinates(.)[,2]) 
 fee_R12 <- as_tibble(fee_R12) %>%
-  filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
+  #filter(GAP_Sts == "1" | GAP_Sts == "2") %>%
   select(GAP_Sts, Category, area, lon, lat)
 
 easement_R12 <- st_read("../data/PADUS/PAD_R12/PADUS2_1Easement_Region12.shp")
