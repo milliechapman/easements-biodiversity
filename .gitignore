@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+scripts/data/
+scripts/revisions/revised-analysis_f2_cache/
+scripts/revisions/analysis-and-figures_cache/
