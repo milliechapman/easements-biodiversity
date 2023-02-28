@@ -1,10 +1,12 @@
 
-# The potential contribution of private lands to U.S. 30x30 conservation 
+# Leveraging private lands to meet 2030 biodiversity targets in the United States
 
-(1) Code to extract biodiversity and carbon metrics: `scripts/analysis/data-extraction.Rmd`
+All code and analysis to support:
 
-(2) Code to reproduce figures: `scripts/analysis/analysis-and-figures.Rmd`
+> Chapman, M., Boettiger, C., & Brashares, J. (2023). Leveraging private lands to meet 2030 biodiversity targets in the United States. *Conservation Science and Practice.*
 
-(3) Code for Supporting Info: `scripts/analysis/SI.Rmd`
+  (1) Code for analysis and to reproduce figures can be found in: `scripts/analysis/data-extraction.Rmd` and `scripts/analysis/analysis-and-figures.Rmd`
 
-All data used in this study is publicly available online. While licencing restricts us from sharing data here, we provide thorough outline of all data sources used in `scripts/manuscript.Rmd`
+  (2) Code for Supporting Info: `scripts/analysis/SI.Rmd`
+
+While licencing restricts us from sharing data used to support the findings of this study here, all data are publicly available from hosting organizations for non-commercial purposes and can be accessed as outline in `scripts/data.md`

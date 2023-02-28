@@ -38,31 +38,38 @@ US shapefile (for visualization below)
 US <- st_read("../data/US_shp/s_11au16.shp")
 ```
 
-Easement data (already filtered to GAP 1 and GAP 2) by region
+Easement data (already filtered to GAP 1 and GAP 2) by region from NCED (more up to date than PADUS 2.0)
 
 ```{r warning=FALSE, message=FALSE, include = FALSE, cache=TRUE}
-easements1 <- read_csv("../data/summary_richness/easement_R1_extract.csv")
-easements2 <- read_csv("../data/summary_richness/easement_R2_extract.csv")
-easements3 <- read_csv("../data/summary_richness/easement_R3_extract.csv")
-easements4 <- read_csv("../data/summary_richness/easement_R4_extract.csv")
-easements5 <- read_csv("../data/summary_richness/easement_R5_extract.csv")
-easements6 <- read_csv("../data/summary_richness/easement_R6_extract.csv")
-easements7 <- read_csv("../data/summary_richness/easement_R7_extract.csv")
-easements8 <- read_csv("../data/summary_richness/easement_R8_extract.csv")
-easements9 <- read_csv("../data/summary_richness/easement_R9_extract.csv")
-easements10 <- read_csv("../data/summary_richness/easement_R10_extract.csv")
-easements11 <- read_csv("../data/summary_richness/easement_R11_extract.csv")
-easements12 <- read_csv("../data/summary_richness/easement_R12_extract.csv")
 
-easements <- rbind(easements1, easements2,easements3, easements4, easements5, easements6, easements7,
-                   easements8, easements9, easements10, easements11, easements12)
-rm(easements1, easements2,easements3, easements4, easements5, easements6, easements7,
-                   easements8, easements9, easements10, easements11, easements12)
+# easements1 <- read_csv("../data/summary_richness/easement_R1_extract.csv")
+# easements2 <- read_csv("../data/summary_richness/easement_R2_extract.csv")
+# easements3 <- read_csv("../data/summary_richness/easement_R3_extract.csv")
+# easements4 <- read_csv("../data/summary_richness/easement_R4_extract.csv")
+# easements5 <- read_csv("../data/summary_richness/easement_R5_extract.csv")
+# easements6 <- read_csv("../data/summary_richness/easement_R6_extract.csv")
+# easements7 <- read_csv("../data/summary_richness/easement_R7_extract.csv")
+# easements8 <- read_csv("../data/summary_richness/easement_R8_extract.csv")
+# easements9 <- read_csv("../data/summary_richness/easement_R9_extract.csv")
+# easements10 <- read_csv("../data/summary_richness/easement_R10_extract.csv")
+# easements11 <- read_csv("../data/summary_richness/easement_R11_extract.csv")
+# easements12 <- read_csv("../data/summary_richness/easement_R12_extract.csv")
+# 
+# easements <- rbind(easements1, easements2,easements3, easements4, easements5, easements6, easements7,
+#                    easements8, easements9, easements10, easements11, easements12)
+# rm(easements1, easements2,easements3, easements4, easements5, easements6, easements7,
+#                    easements8, easements9, easements10, easements11, easements12)
 
-easements <- easements %>%
-  dplyr::select(Category, Mang_Type, Des_Tp, State_Nm, Date_Est, Access_Dt, GAP_Sts,EHoldTyp, Loc_Ds, Own_Type,
-         mammal_mean:area) %>% 
-  filter(Des_Tp == "CONE") 
+easements <- read_csv("../data/summary_richness/nced_extract.csv") |>
+  filter(area > 1000) |>
+  rename(GAP_Sts = GAT_Sts)
+
+easements |> group_by(GAP_Sts) |> count()
+# easements <- easements %>%
+#   dplyr::select(Category, Mang_Type, Des_Tp, State_Nm, Date_Est, Access_Dt, GAP_Sts,EHoldTyp, Loc_Ds, Own_Type,
+#          mammal_mean:area) %>% 
+#   filter(Des_Tp == "CONE")|>
+#   filter(area > 1000)
 ```
 
 Fee data by region (all GAP codes)
@@ -85,11 +92,16 @@ fee <- rbind(fee1, fee2,fee3, fee4, fee5, fee6, fee7,
                    fee8, fee9, fee10, fee11, fee12)
 rm(fee1, fee2,fee3, fee4, fee5, fee6, fee7,
                    fee8, fee9, fee10, fee11, fee12)
-unique(fee$Mang_Type)
 fee <- fee %>%
   dplyr::select(Category, Mang_Type, Des_Tp, State_Nm, Date_Est, GAP_Sts, Own_Type,
          mammal_mean:area)  %>%
-    mutate(Category = "fee")
+    mutate(Category = "fee") |>
+  filter(area > 1000) |> filter(Mang_Type %in% c("FED", "STAT", "LOC"))
+
+fee |> filter(GAP_Sts == "1"| GAP_Sts =="2") |>
+  group_by(GAP_Sts) |> count()
+fee12 <- fee |> filter(GAP_Sts == "1"| GAP_Sts =="2")
+sum(easements$area)/sum(fee12$area)*100
 ```
 
 
@@ -105,7 +117,33 @@ mutate(future = plant_future  + tree_future + reptile_future + amphibian_future 
          `Vulnerable Carbon` = carbon_vulnerable,
          `CRENVU Richness` =  richness_crenvu, 
          `Future Richness` = future)
+
+ease_fig <- easements %>%
+  mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
+  dplyr::select(Category,carbon_vulnerable,richness_all:RSR_all, future, Date_Est, area) %>%
+  dplyr::rename(`Species Richness` = richness_all,
+         `Vulnerable Carbon` = carbon_vulnerable,
+         `CRENVU Richness` =  richness_crenvu,
+         `Future Richness` = future)
 ```
+
+```{r}
+library(weights)
+shapiro.test(dplyr::sample_n(fee_fig, 1000)$`Species Richness`)
+wtd.t.test(x=fee_fig$`Species Richness`,
+           y=ease_fig$`Species Richness`,
+           weight=fee_fig$area,
+           weighty=ease_fig$area,
+           samedata=FALSE)
+
+wtd.t.test(x=fee_fig$`Vulnerable Carbon`,
+           y=ease_fig$`Vulnerable Carbon`,
+           weight=fee_fig$area,
+           weighty=ease_fig$area,
+           samedata=FALSE)
+stats::t.test(fee_fig$`Vulnerable Carbon`, ease_fig$`Vulnerable Carbon`)
+```
+
 
 Bind fee and easement data for figure 3
 
@@ -131,13 +169,13 @@ fig3a <- easements %>%
   filter(Category == "fee") %>%
   ggplot(aes(x = time, y = value, col = Category)) + geom_boxplot() +
   facet_wrap(vars(name), ncol = 4, scales = "free_y") +
-  stat_compare_means(aes(group = time), vjust = 1, hjust = -1, label = "p.signif", color = "black", size=4) + 
+  stat_compare_means(aes(group = time), method = "t.test", vjust = 1, hjust = -1, label = "p.signif", color = "black", size=4) + 
   scale_color_manual(values=c("#E69F00")) +
   theme_classic() +
   theme(legend.position = "none",
         legend.title = element_blank()) +
   theme(axis.title.x = element_blank()) +
-  labs(y = "mean value per parcel") 
+  labs(y = "mean value per parcel") + theme(text = element_text(size = 11))
 
 fig3b <- easements %>%
   mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
@@ -160,22 +198,122 @@ fig3b <- easements %>%
   filter(Category == "Easement") %>%
   ggplot(aes(x = time, y = value, col = Category)) + geom_boxplot() +
   facet_wrap(vars(name), ncol = 4, scales = "free_y") +
-  stat_compare_means(aes(group = time), vjust = 1, hjust = -1, label = "p.signif", color = "black", size=4) + 
+  stat_compare_means(aes(group = time), method = "wilcox.test", vjust = 1, hjust = -1, label = "p.signif", color = "black", size=4) + 
   scale_color_manual(values=c("#0072B2")) +
   theme_classic() +
   theme(legend.position = "none",
         legend.title = element_blank()) +
   theme(axis.title.x = element_blank()) +
-  labs(y = "mean value per parcel") 
+  labs(y = "mean value per parcel") + theme(text = element_text(size = 11))
 ```
 
 ```{r fig3, fig.width=8, fig.height=5, dpi = 300}
 library(patchwork)
-fig3b/fig3a + plot_annotation(tag_levels = 'A')
+figure3 <- fig3b/fig3a + plot_annotation(tag_levels = 'A')
+ggsave("../analysis/figures/figure3.png", figure3, width = 8.5, height =5, dpi =300)
+```
+
+area stats 
+```{r}
+areas <- easements %>%
+  mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
+  dplyr::select(Category,carbon_vulnerable,richness_all:RSR_all, future, Date_Est, area) %>%
+  dplyr::rename(`Species Richness` = richness_all,
+         `Vulnerable Carbon` = carbon_vulnerable,
+         `CRENVU Richness` =  richness_crenvu,
+         `Future Richness` = future) %>%
+  drop_na() %>%
+  rbind(fee_fig) %>%
+  mutate(area = area/10000) %>%
+  group_by(Category) %>%
+  summarise(mean = mean(area),
+            #SD = SD(area),
+            sum = (sum(area)))
+
+areas$sum[1]/areas$sum[2]
+```
+
+t-test stats for paper
+```{r}
+easements_ttest <- easements %>%
+  mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
+  dplyr::select(Category,carbon_vulnerable,richness_all:RSR_all, future, Date_Est, area) %>%
+  dplyr::rename(`Species Richness` = richness_all,
+         `Vulnerable Carbon` = carbon_vulnerable,
+         `CRENVU Richness` =  richness_crenvu,
+         `Future Richness` = future) %>%
+  drop_na() %>%
+  rbind(fee_fig) %>%
+  mutate(time = ifelse(Date_Est <2000, NA, 
+                       ifelse(Date_Est > 1999 & Date_Est < 2010, "2000-2009", "2010-2019"))) %>%
+  drop_na() %>%
+  dplyr::select(-c(Date_Est, area, RSR_all)) %>%
+  pivot_longer(-c(Category, time)) %>%
+  mutate(name = factor(name, levels = c("Species Richness", 
+                                        "CRENVU Richness",
+                                        "Future Richness",
+                                        "Vulnerable Carbon"))) %>%
+  filter(Category == "Easement")
+
+easements_ttest %>%
+  group_by(name, time) %>%
+  summarise(mean = mean(value),
+            SD = sd(value))
+
+easements_ttest %>% rename(variable = name) %>%
+  dplyr::select(-Category) %>%
+  group_by(time, variable) %>% 
+  summarise(value = list(value)) %>% 
+  spread(time, value) %>% 
+  group_by(variable) %>%
+  mutate(p_value = wilcox.test(unlist(`2000-2009`), unlist(`2010-2019`))$p.value,
+         t_value = wilcox.test(unlist(`2000-2009`), unlist(`2010-2019`))$statistic,
+         estimate_2000 = wilcox.test(unlist(`2000-2009`), unlist(`2010-2019`))$estimate[1],
+         estimate_2010 = wilcox.test(unlist(`2000-2009`), unlist(`2010-2019`))$estimate[2],
+         df =  wilcox.test(unlist(`2000-2009`), unlist(`2010-2019`))$parameter)
+```
+
+```{r}
+fee_ttest <- easements %>%
+  mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
+  dplyr::select(Category,carbon_vulnerable,richness_all:RSR_all, future, Date_Est, area) %>%
+  dplyr::rename(`Species Richness` = richness_all,
+         `Vulnerable Carbon` = carbon_vulnerable,
+         `CRENVU Richness` =  richness_crenvu,
+         `Future Richness` = future) %>%
+  drop_na() %>%
+  rbind(fee_fig) %>%
+  mutate(time = ifelse(Date_Est <2000, NA, 
+                       ifelse(Date_Est > 1999 & Date_Est < 2010, "2000-2009", "2010-2019"))) %>%
+  drop_na() %>%
+  dplyr::select(-c(Date_Est, area, RSR_all)) %>%
+  pivot_longer(-c(Category, time)) %>%
+  mutate(name = factor(name, levels = c("Species Richness", 
+                                        "CRENVU Richness",
+                                        "Future Richness",
+                                        "Vulnerable Carbon"))) %>%
+  filter(Category == "fee")
+
+fee_ttest %>%
+  group_by(name, time) %>%
+  summarise(mean = mean(value),
+            SD = sd(value))
+
+fee_ttest %>% rename(variable = name) %>%
+  dplyr::select(-Category) %>%
+  group_by(time, variable) %>% 
+  summarise(value = list(value)) %>% 
+  spread(time, value) %>% 
+  group_by(variable) %>%
+  mutate(p_value = wilcox.test(unlist(`2000-2009`), unlist(`2010-2019`))$p.value,
+         t_value = wilcox.test(unlist(`2000-2009`), unlist(`2010-2019`))$statistic,
+         estimate_2000 = wilcox.test(unlist(`2000-2009`), unlist(`2010-2019`))$estimate[1],
+         estimate_2010 = wilcox.test(unlist(`2000-2009`), unlist(`2010-2019`))$estimate[2],
+         df =  wilcox.test(unlist(`2000-2009`), unlist(`2010-2019`))$parameter)
+
 ```
 
 # Figure 2:
-
 
 ```{r}
 # easements already filtered to GAP1-2 before extraction 
@@ -275,7 +413,7 @@ f2private <- f2public %>%
          richness_crenvu = ((richness_crenvu_b*total_area_ca)-(richness_crenvu*total_area_public))/(area_private),
          carbon_vulnerable = ((carbon_vulnerable_b*total_area_ca)-(carbon_vulnerable*total_area_public))/(area_private)) %>%
   dplyr::select(richness_all:carbon_vulnerable, area_private) %>%
-  mutate(Category = "Private") %>%
+  mutate(Category = "Nonpublic") %>%
   rename(area = area_private)
 ```
 
@@ -298,7 +436,7 @@ public_private <- f2public %>%
                                         "Future Richness",
                                         "Vulnerable Carbon"))) %>%
   mutate(type = Category) %>%
-  mutate(Category = plyr::revalue(Category, c(Private = "easement", Public = "fee") ))
+  mutate(Category = plyr::revalue(Category, c(Private = "Easement", Public = "Fee") ))
 ```
 
 
@@ -319,6 +457,7 @@ fig2a <- ag_e %>%
                                         "CRENVU Richness",
                                         "Future Richness",
                                         "Vulnerable Carbon"))) %>%
+  mutate(Category = ifelse(Category== "easement", "Easement", "Fee")) |>
   ggplot(aes(x = Category, y = value*100, fill = Category)) + 
   geom_bar(stat = "identity") +
     scale_fill_manual(values=c("#0072B2", "#E69F00", "black", "black")) +
@@ -333,13 +472,15 @@ fig2a <- ag_e %>%
   theme(legend.title = element_blank(),
         legend.position = "bottom") +
   theme(axis.title.x = element_blank()) +
-  labs(y = "% difference from national mean value")
+  labs(y = "% difference from \n national mean value") +
+  theme(text = element_text(size = 11.5))
 ```
 
 
 
 ```{r fig2, fig.width=8, fig.height=3.5, dpi = 300}
 fig2a
+ggsave("../analysis/figures/fig2.png", fig2a, width=8, height=3.5, dpi = 300)
 ```
 
 # Figure 4: Bivariate map
@@ -806,6 +947,7 @@ f4
 ```{r}
 # easements already filtered to GAP1-2 before extraction 
 ag_e <- easements %>%
+  rename(State_Nm = state) |>
   mutate(Category = "easement") %>%
   group_by(Category, State_Nm) %>%
   mutate(total_area = sum(area)) %>%
@@ -932,6 +1074,15 @@ ease_count_st <- ease_data %>% filter(State_Nm != "PR") %>%
                               ifelse(rel_richness>0 & rel_carbon<0,3,4)))) %>%
   group_by(color) %>% count()
 ```
+
+```{r}
+fee_count_st <- fee_data %>% filter(State_Nm != "PR") %>%
+  mutate(color = ifelse(rel_richness>0 & rel_carbon>0,1,
+                       ifelse(rel_richness<0 & rel_carbon>0,2,
+                              ifelse(rel_richness>0 & rel_carbon<0,3,4)))) %>%
+  group_by(color) %>% count()
+```
+
 
 ```{r}
 private_count_st <- private_data %>% filter(State_Nm != "PR") %>%
@@ -1170,7 +1321,6 @@ private <-subnational_private_main +
 ```
 
 
-
 ```{r}
 fee_subn <- ag_fee %>%
   mutate(richness_fee = richness_all,
@@ -1251,11 +1401,39 @@ fee_ease_subn <-fee_ease_subn_main +
   ) 
 ```
 
+```{r fig.height= 4, fig.width=4, dpi = 300}
+fee_subn <- ag_fee %>%
+  mutate(richness_fee = richness_all,
+         carbon_fee = carbon_vulnerable)
+ease_subn <- ag_e %>%
+  mutate(richness_ease = richness_all,
+         carbon_ease = carbon_vulnerable)
 
+plot_df <- fee_subn %>%
+  left_join(ease_subn, by = "State_Nm") %>%
+  drop_na() %>%
+  mutate(diff_carbon = carbon_ease-carbon_fee,
+         diff_richness = richness_ease- richness_fee)
 
+c("#5e63ae", 
+                               "#355149",
+                               "#77ac59",
+                               "#d3d3d3")
+subnational_plt <- plot_df |>
+   ggplot(aes(x = diff_richness, y = diff_carbon))+ 
+      annotate("rect", xmin = Inf, xmax = 0, ymin = Inf, ymax = 0, fill= "#355149")  + 
+      annotate("rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = 0 , fill= "#d3d3d3") + 
+      annotate("rect", xmin = 0, xmax = Inf, ymin = 0, ymax = -Inf, fill= "#5e63ae") + 
+      annotate("rect", xmin = 0, xmax = -Inf, ymin = Inf, ymax = 0, fill=  "#77ac59") + 
+      geom_point() + xlim(-100,100)+ ylim(-100,100) +
+  labs(x = "% difference species richness \n (easement and fee by state)",
+       y = "% difference carbon \n (easement and fee by state)")
 
-```{r figure4BC, fig.width=8, fig.height=4, dpi=300}
-fee_ease_subn + private
+ggsave("figures/fig4c.png", subnational_plt, width = 3.8, height = 3.2, dpi = 300)
+```
+
+```{r figure4BC, fig.width=7, fig.height=4, dpi=300}
+ggsave("figures/fig4b.png", fee_ease_subn, width = 7, height = 4, dpi = 300)
 ```
 
 ```{r}
@@ -1269,3 +1447,570 @@ fee_ease_subn + private
  # group_by(color) %>% count()
 ```
 
+
+## figure 1
+
+```{r}
+filter_fun <- function(x) {
+  x |>  
+    dplyr::mutate(valid =st_is_valid(x)) %>% 
+    dplyr::filter(valid=="TRUE") %>%
+    filter(GAP_Sts==1|GAP_Sts==2) %>%
+    filter(GIS_Acres>1) |> mutate(area = st_area(geometry))
+}
+```
+
+```{r}
+fee_R1 <- st_read("../data/PADUS/PAD_R1/PADUS2_1Fee_Region1.shp") |>
+  filter_fun() |> filter(as.numeric(area) >1000)
+fee_R2 <- st_read("../data/PADUS/PAD_R2/PADUS2_1Fee_Region2.shp") |>
+  filter_fun() |> filter(as.numeric(area) >1000)
+fee_R3 <- st_read("../data/PADUS/PAD_R3/PADUS2_1Fee_Region3.shp") |>
+  filter_fun() |> filter(as.numeric(area) >1000)
+fee_R4 <- st_read("../data/PADUS/PAD_R4/PADUS2_1Fee_Region4.shp") |>
+  filter_fun() |> filter(as.numeric(area) >1000)
+fee_R5 <- st_read("../data/PADUS/PAD_R5/PADUS2_1Fee_Region5.shp") |>
+  filter_fun() |> filter(as.numeric(area) >1000) 
+fee_R6 <- st_read("../data/PADUS/PAD_R6/PADUS2_1Fee_Region6.shp") |>
+  filter_fun() |> filter(as.numeric(area) >1000)
+fee_R7 <- st_read("../data/PADUS/PAD_R7/PADUS2_1Fee_Region7.shp") |>
+  filter_fun() |> filter(as.numeric(area) >1000)
+fee_R8 <- st_read("../data/PADUS/PAD_R8/PADUS2_1Fee_Region8.shp") |>
+  filter_fun() |> filter(as.numeric(area) >1000)
+fee_R9 <- st_read("../data/PADUS/PAD_R9/PADUS2_1Fee_Region9.shp") |>
+  filter_fun() |> filter(as.numeric(area) >1000)
+fee_R10 <- st_read("../data/PADUS/PAD_R10/PADUS2_1Fee_Region10.shp") |>
+  filter_fun() |> filter(as.numeric(area) >1000)
+fee_R11 <- st_read("../data/PADUS/PAD_R11/PADUS2_1Fee_Region11.shp") |>
+  filter_fun() |> filter(as.numeric(area) >1000)
+fee_R12 <- st_read("../data/PADUS/PAD_R12/PADUS2_1Fee_Region12.shp") |>
+  filter_fun() |> filter(as.numeric(area) >1000)
+```
+
+```{r}
+# old easements data - updated with NCED 
+# easement_R1 <- st_read("../data/PADUS/PAD_R1/PADUS2_1Easement_Region1.shp") |>
+#   filter_fun() |> filter(as.numeric(area) >1000)
+# easement_R2 <- st_read("../data/PADUS/PAD_R2/PADUS2_1Easement_Region2.shp") |>
+#   filter_fun() |> filter(as.numeric(area) >1000)
+# easement_R3 <- st_read("../data/PADUS/PAD_R3/PADUS2_1Easement_Region3.shp") |>
+#   filter_fun() |> filter(as.numeric(area) >1000)
+# easement_R4 <- st_read("../data/PADUS/PAD_R4/PADUS2_1Easement_Region4.shp") |>
+#   filter_fun() |> filter(as.numeric(area) >1000)
+# easement_R5 <- st_read("../data/PADUS/PAD_R5/PADUS2_1Easement_Region5.shp") |>
+#   filter_fun() |> filter(as.numeric(area) >1000) |> filter(Comments != "GENERAL PLANNING ONLY-not a legal representation of the easement boundary.")
+# easement_R6 <- st_read("../data/PADUS/PAD_R6/PADUS2_1Easement_Region6.shp") |>
+#   filter_fun() |> filter(as.numeric(area) >1000)
+# easement_R7 <- st_read("../data/PADUS/PAD_R7/PADUS2_1Easement_Region7.shp") |>
+#   filter_fun() |> filter(as.numeric(area) >1000)
+# easement_R8 <- st_read("../data/PADUS/PAD_R8/PADUS2_1Easement_Region8.shp") |>
+#   filter_fun() |> filter(as.numeric(area) >1000)
+# easement_R9 <- st_read("../data/PADUS/PAD_R9/PADUS2_1Easement_Region9.shp") |>
+#   filter_fun() |> filter(as.numeric(area) >1000)
+# easement_R10 <- st_read("../data/PADUS/PAD_R10/PADUS2_1Easement_Region10.shp") |>
+#   filter_fun() |> filter(as.numeric(area) >1000)
+# easement_R11 <- st_read("../data/PADUS/PAD_R11/PADUS2_1Easement_Region11.shp") |>
+#   filter_fun() |> filter(as.numeric(area) >1000)
+# easement_R12 <- st_read("../data/PADUS/PAD_R12/PADUS2_1Easement_Region12.shp") |>
+#   filter_fun() |> filter(as.numeric(area) >1000)
+# 
+# easements <- rbind(easement_R1, easement_R2,easement_R3,
+#                    easement_R4, easement_R5, easement_R6,
+#                    easement_R7, easement_R8, easement_R9,
+#                    easement_R10, easement_R11, easement_R12)
+# 
+# easements <- easements %>%
+#   dplyr::select(Category, Mang_Type, Des_Tp, State_Nm, Date_Est, Access_Dt, GAP_Sts,EHoldTyp, Loc_Ds, Own_Type,
+#         area) %>% 
+#   filter(Des_Tp == "CONE")
+```
+
+
+```{r}
+fee <- rbind(fee_R1, fee_R2, fee_R3,
+             fee_R4, fee_R5, fee_R6,
+             fee_R7, fee_R8, fee_R9,
+             fee_R10, fee_R11, fee_R12)
+fee <- fee %>%
+  dplyr::select(Category, Mang_Type, Des_Tp, State_Nm, Date_Est, GAP_Sts, Own_Type,
+         area)  %>%
+    mutate(Category = "fee") |>
+   filter(Mang_Type %in% c("FED", "STAT", "LOC"))
+```
+
+```{r}
+nced <- st_read("../data/nced/NCED_Polygons_06232022.shp") 
+
+nced <- nced |>
+  dplyr::mutate(valid =st_is_valid(nced)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(gapcat == "1" | gapcat == "2") |>
+  mutate(area = st_area(geometry)) 
+st_crs(nced) <- crs(fee)
+
+# rename etc..
+nced <- nced |>
+  rename(Date_Est = year_est,
+         GAP_Sts = gapcat) |>
+  mutate(Category = "Easement")  |>
+  mutate(area = st_area(geometry))
+```
+
+```{r}
+priority <- st_read("../data/Priority_index_summary.shp") |>
+  mutate(high = quantile(Priority_i, .9),
+         diff = Priority_i-high) |>
+  dplyr::filter(diff>0) |>
+  st_transform(crs = crs(fee))
+st_crs(priority) <- crs(fee)
+```
+
+
+```{r}
+usa <- st_read("../data/US_shp/s_11au16.shp")
+```
+
+```{r}
+mainland <- ggplot() + 
+  geom_sf(data = usa, fill = "#dcdcdc", lwd = 0.1)+
+  geom_sf(data = priority, fill = "darkgrey",lwd = 0, alpha = 0.8) +
+  geom_sf(data = nced, fill = "#0072B2",line = "#0072B2", lwd = 0) +
+  geom_sf(data = fee, fill = "#E69F00",line = "#E69F00", lwd = 0) +
+  coord_sf(crs = st_crs(2163), xlim = c(-2500000, 2500000), ylim = c(-2300000, 
+         730000))+ theme_minimal() +
+  theme(panel.border = element_rect(colour = "black", fill=NA))
+mainland
+```
+
+```{r}
+alaska <- ggplot() +
+    geom_sf(data = usa, fill = "#dcdcdc", lwd = 0.1)+
+  geom_sf(data = priority, fill = "darkgrey",lwd = 0, alpha = 0.9) +
+  geom_sf(data = nced, fill = "#0072B2",line = "#0072B2", lwd = 0.01) +
+  geom_sf(data = fee, fill = "#E69F00",line = "#E69F00", lwd = 0.01) +
+     coord_sf(crs = st_crs(3467), xlim = c(-2400000, 1600000), ylim = c(200000, 
+         2500000), expand = FALSE, datum = NA) +theme_minimal() +
+   theme(panel.border = element_rect(colour = "black", fill=NA))
+hawaii  <- ggplot() +
+    geom_sf(data = usa, fill = "#dcdcdc", lwd = 0.1)+
+  geom_sf(data = priority, fill = "darkgrey",lwd = 0, alpha = 0.9) +
+  geom_sf(data = nced, fill = "#0072B2",line = "#0072B2", lwd = 0.01) +
+  geom_sf(data = fee, fill = "#E69F00",line = "#E69F00", lwd = 0.01) +
+     coord_sf(crs = st_crs(4135), xlim = c(-161, -154), ylim = c(18, 
+         23), expand = FALSE, datum = NA) +theme_minimal() +
+     theme(panel.border = element_rect(colour = "black", fill=NA))
+```
+
+
+```{r, fig.height= 5, fig.width = 6, dpi = 300}
+map <- mainland +
+ annotation_custom(
+      grob = ggplotGrob(alaska),
+      xmin = -2800000,
+      xmax = -2750000 + (1600000 - (-2400000))/2.5,
+      ymin = -2450000,
+      ymax = -2450000 + (2500000 - 200000)/2.5
+  ) +
+  annotation_custom(
+      grob = ggplotGrob(hawaii),
+      xmin = -1250000,
+      xmax = -1250000 + (-154 - (-161))*120000,
+      ymin = -2450000,
+      ymax = -2450000 + (23 - 18)*120000
+  )
+ggsave("figures/map.png",map, height= 5, width = 6, dpi = 300)
+```
+
+```{r} 
+fee1b <- as_tibble(fee) |> 
+  dplyr::select(Category, area) |>
+  mutate(Category = "Fee") |>
+  group_by(Category) |>
+  summarise(area = sum(as.numeric(area), na.rm = TRUE))
+
+ease1b <- as_tibble(nced) |> 
+  dplyr::select(Category, area) |>
+  group_by(Category) |>
+  summarise(area = sum(as.numeric(area), na.rm = TRUE))
+
+fig1b <- fee1b |> rbind(ease1b) |>
+  ggplot(aes(x = Category, y = area/10^6/10^3, fill = Category)) + 
+  scale_fill_manual(values=c("#0072B2", "#E69F00")) +
+  geom_bar(stat = "identity", width=0.65, position=position_dodge(width=0.8)) +
+  theme_minimal() +
+  theme(axis.title.x =element_blank()) +
+  theme(legend.title = element_blank()) + 
+  theme(legend.position = "none") + ylab(bquote("total area"  ~(10^3*km^2))) +
+   theme(axis.text=element_text(size=11),
+        axis.title=element_text(size=11),
+        panel.border = element_rect(colour = "black", fill=NA),
+        legend.box.background = element_rect(colour = "black"))
+```
+
+```{r} 
+fee1c <- as_tibble(fee) |> dplyr::select(area, Category) |>
+  mutate(Category = "Fee")
+ease1c <- as_tibble(easements) |> dplyr::select(area, Category)
+
+fig1c <- fee1c |>
+  rbind(ease1c) |>
+  filter(as.numeric(area) > 10000) |>
+  ggplot(aes(x = Category, y = log(as.numeric(area)/10^6), fill = Category)) + 
+  scale_fill_manual(values=c("#0072B2", "#E69F00")) +
+  geom_boxplot() +
+  theme_minimal() +
+  theme(axis.title.x =element_blank()) +
+  theme(legend.title = element_blank()) + 
+  theme(legend.position = "none") + ylab(bquote("log(parcel area)" ~(km^2))) +
+   theme(axis.text=element_text(size=11),
+        axis.title=element_text(size=11),
+        panel.border = element_rect(colour = "black", fill=NA),
+        legend.box.background = element_rect(colour = "black"))
+```
+
+```{r} 
+fee1d <- as_tibble(fee) |> 
+  dplyr::select(Date_Est, area, Category) |>
+  group_by(Category, Date_Est) |>
+  summarise(area = sum(as.numeric(area, na.rm = TRUE))) |>
+  mutate(Date_Est = as.numeric(Date_Est)) |>
+  arrange(Date_Est) |>
+  mutate(cumsum = cumsum(area)/10^9)
+
+ease1d <- as_tibble(easements) |> 
+  dplyr::select(Date_Est, area, Category) |>
+  group_by(Category, Date_Est) |>
+  summarise(area = sum(as.numeric(area, na.rm = TRUE))) |>
+  mutate(Date_Est = as.numeric(Date_Est)) |>
+  arrange(Date_Est) |>
+  mutate(cumsum = cumsum(area)/10^9)
+
+fig1d <- fee1d |>
+  rbind(ease1d) |>
+  mutate(Date_Est = as.numeric(Date_Est)) |>
+  filter(Date_Est>1900) |>
+  ggplot(aes(x = Date_Est, y = cumsum, group = Category, color = Category)) + 
+  scale_color_manual(values=c("#0072B2", "#E69F00")) +
+  geom_line() +
+  geom_vline(xintercept=2010, linetype="dashed") +
+  theme_minimal() +
+  scale_x_continuous(breaks=seq(1900, 2020, 40)) +
+  theme(axis.title.x =element_blank()) +
+  theme(legend.title = element_blank()) + 
+  theme(legend.position = "none") + ylab(bquote("cumulative area"  ~(10^3*km^2))) +
+   theme(axis.text=element_text(size=11),
+        axis.title=element_text(size=11),
+        panel.border = element_rect(colour = "black", fill=NA),
+        legend.box.background = element_rect(colour = "black"))
+
+```
+
+```{r}
+priority_ease <- st_intersection(nced, priority) 
+priority_ease_area <- sum(st_area(priority_ease))/10^9
+ease_area <- sum(nced$area)/10^9
+ease_area_pri_perc <- priority_ease_area/ease_area
+
+priority_fee <- st_intersection(fee, priority)
+priority_fee_area <- sum(st_area(priority_fee))/10^9
+fee_area <- sum(fee$area)/10^9
+fee_area_pri_perc <- priority_fee_area/fee_area
+
+priority_ease_area/priority_fee_area
+
+fig1e <- data.frame(
+  Category = c("Easement", "Fee"),
+  Priority = c(as.numeric(ease_area_pri_perc), as.numeric(fee_area_pri_perc))
+) |>
+  ggplot(aes(x = Category, y = Priority*100, fill = Category)) + 
+  scale_fill_manual(values=c("#0072B2", "#E69F00")) +
+  geom_bar(stat = "identity", width=0.65, position=position_dodge(width=0.8)) +
+  theme_minimal() +
+  theme(axis.title.x =element_blank()) +
+  theme(legend.title = element_blank()) + 
+  theme(legend.position = "none") + ylab("% area in priority zone") +
+   theme(axis.text=element_text(size=11),
+        axis.title=element_text(size=11),
+        panel.border = element_rect(colour = "black", fill=NA),
+        legend.box.background = element_rect(colour = "black"))
+```
+
+
+```{r fig.width = 6, fig.height=2}
+library(ggpubr)
+fig1bottom <- ggarrange(fig1b,fig1c,fig1d,fig1e, nrow = 1, labels = c("A", "C", "D", "E"))
+ggsave("figures/fig1bottom.png",fig1bottom, width = 10, height = 2.8, unit = "in", dpi =300)
+```
+
+
+
+
+```{r}
+pri_e <- as_tibble(priority_ease) |> group_by(Category) |>
+  summarise(priority_area = sum(as.numeric(area)))
+
+pri_f <- as_tibble(priority_fee) |> group_by(Category) |>
+  summarise(priority_area = sum(as.numeric(area)))
+pri_area <- pri_e |>
+  rbind(pri_f)
+
+fee1b |> rbind(ease1b) |>
+  left_join(pri_area) |>
+  mutate(perc_priority = priority_area/area)
+```
+
+
+```{r}
+pa_size<- as.tibble(pa_priority) %>%
+  mutate(pa_ce = "pa") %>%
+  group_by(WDPAID, pa_ce) %>%
+  summarise(area = sum(area),
+            priority = mean(Prirty_)) %>%
+  mutate(unique_id = WDPAID)
+ce_size<- as.tibble(ce_priority) %>%
+  mutate(pa_ce = "ce") %>%
+  group_by(uniqu_d, pa_ce) %>%
+  summarise(area = sum(area),
+            priority = mean(Prirty_)) %>%
+  mutate(unique_id = uniqu_d)
+```
+
+```{r}
+ce_size$unique_id <- as.numeric(ce_size$unique_id)
+pa_size$unique_id <- as.numeric(pa_size$unique_id)
+size_plot <- pa_size %>%
+  bind_rows(ce_size) %>% 
+  mutate(area = as.numeric(area)) %>%
+  filter(priority <50)
+size_plot %>% ggplot(aes(x = log(area), y = priority, col = pa_ce)) + geom_point(shape = 21,alpha = 1/5)
+```
+
+```{r}
+pa_all<- as.tibble(pa_priority) %>%
+  mutate(pa_ce = "pa",
+         Priority_i = Prirty_) %>%
+  group_by(pa_ce) %>%
+  summarise(priority_i = sum(Priority_i*as.numeric(area)),
+            area = sum(as.numeric(area)),
+            .groups = "drop") %>% 
+  mutate(priority_i = priority_i/area) 
+ce_all<- as.tibble(ce_priority) %>%
+  mutate(pa_ce = "ce",
+         Priority_i = Prirty_) %>%
+  group_by(pa_ce) %>%
+  summarise(priority_i = sum(Priority_i*as.numeric(area)),
+            area = sum(as.numeric(area)),
+            .groups = "drop") %>% 
+  mutate(priority_i = priority_i/area)
+all_priority_i <- pa_all %>% bind_rows(ce_all) %>%
+   mutate(crit = "all")
+all_priority_i
+```
+
+
+```{r}
+a <- size_plot %>% group_by(pa_ce) %>% summarise(area = sum(area)/10^9,
+                                                 count = n()) %>%
+  mutate(pa_ce = recode(pa_ce, pa = "Protected \nareas", ce = "Conservation \n Easements")) %>%
+  ggplot(aes(x = pa_ce, y = area, fill = pa_ce)) + 
+  scale_fill_manual(values=c("#0072B2", "#E69F00")) +
+  geom_bar(stat = "identity", width=0.65, position=position_dodge(width=0.8)) +
+  theme_minimal() +
+  theme(axis.title.x =element_blank()) +
+  theme(legend.title = element_blank()) + 
+  theme(legend.position = "none") + ylab("Total area") +
+   theme(axis.text=element_text(size=8),
+        axis.title=element_text(size=10),
+        panel.border = element_rect(colour = "black", fill=NA),
+        legend.box.background = element_rect(colour = "black"))
+
+b <- all_priority_i %>%
+  mutate(pa_ce = recode(pa_ce, pa = "Protected \nareas", ce = "Conservation \n Easements")) %>%
+  ggplot(aes(x = pa_ce, y =priority_i, fill = pa_ce)) +geom_bar(stat = "identity") %>%
+  scale_fill_manual(values=c("#0072B2", "#E69F00")) +
+  geom_bar(stat = "identity", width=0.65, position=position_dodge(width=0.8)) +
+  theme_minimal() +
+  theme(axis.title.x =element_blank()) +
+  theme(legend.title = element_blank()) + 
+  theme(legend.position = "none") + ylab("Mean priority index") + 
+   theme(axis.text=element_text(size=8),
+        axis.title=element_text(size=10),
+        panel.border = element_rect(colour = "black", fill=NA),
+        legend.box.background = element_rect(colour = "black"))
+```
+
+```{r, fig.height= 5, fig.width= 3, dpi= 600}
+grid.arrange(a, b, nrow = 2)
+```
+
+```{r}
+ce_priority_i <- as.tibble(ce_priority) %>%
+  mutate(year_est = year_st,
+         Priority_i = Prirty_) %>%
+  group_by(year_est) %>%
+  summarise(priority_i = sum(Priority_i*as.numeric(area)),
+            area = sum(as.numeric(area)),
+            .groups = "drop") %>% 
+  mutate(priority_i = priority_i/area,
+         pa_ce = "ce") %>%
+  rename(STATUS_YR = "year_est")
+```
+
+```{r}
+pa_priority_i <- as.tibble(pa_priority) %>%
+  mutate(STATUS_YR = STATUS_,
+         Priority_i = Prirty_) %>%
+  group_by(STATUS_YR) %>%
+  summarise(priority_i = sum(Priority_i*as.numeric(area)),
+            area = sum(as.numeric(area)),
+            .groups = "drop") %>% 
+  mutate(priority_i = priority_i/area,
+         pa_ce = "pa") 
+```
+
+```{r}
+all_yrs <- pa_priority_i %>%
+  bind_rows(ce_priority_i)
+all_yrs <- as.data.frame(all_yrs)
+ a<- all_yrs %>% filter(STATUS_YR >2000, STATUS_YR<2017) %>%
+  ggplot(aes(x = STATUS_YR, y = priority_i, col = pa_ce)) +geom_line()
+ 
+b<- all_yrs %>% filter(STATUS_YR>1980, STATUS_YR<2017) %>%
+  ggplot(aes(x = STATUS_YR, y = area, col = pa_ce)) +geom_line()
+grid.arrange(a, b, ncol = 1)
+all_yrs %>% filter(STATUS_YR >1950) %>%
+  group_by(pa_ce) %>%
+  summarise(area = sum(area)/10^9)
+```
+
+
+```{r}
+wdpa_usa <- st_read("../data/wdpa/wdpa_clean_usa.shp")
+```
+
+```{r}
+ce <- st_read("../data/NCED_12182019_Shp/Conservation_Easements.shp")
+```
+
+```{r}
+wdpa_map <- st_transform(wdpa_usa,st_crs(2163))
+ce_map <- st_transform(ce,st_crs(2163))
+```
+
+
+```{r}
+usa <- st_read("../data/US_shp/s_11au16.shp")
+```
+
+```{r}
+mainland <- ggplot() + 
+  geom_sf(data = usa, fill = "#DCDCDC", lwd = 0.1)+
+  geom_sf(data = easements, fill = "#0072B2",lwd = 0.2) +
+  geom_sf(data = fee, fill = "#E69F00",lwd = 0.1) +
+  geom_sf(data = priority, fill = "grey",lwd = 0.2) +
+  coord_sf(crs = st_crs(2163), xlim = c(-2500000, 2500000), ylim = c(-2300000, 
+         730000))+ theme_minimal() +
+  theme(panel.border = element_rect(colour = "black", fill=NA))
+mainland
+```
+
+```{r}
+alaska <- ggplot() +
+    geom_sf(data = usa, fill = "#DCDCDC", lwd = 0)+
+     geom_sf(data = ce_map, fill = "#0072B2", lwd= 0) +
+     geom_sf(data = wdpa_map, fill = "#E69F00", lwd = 0, alpha = 0.5) +
+     coord_sf(crs = st_crs(3467), xlim = c(-2400000, 1600000), ylim = c(200000, 
+         2500000), expand = FALSE, datum = NA) +theme_minimal() +
+   theme(panel.border = element_rect(colour = "black", fill=NA))
+hawaii  <- ggplot() +
+    geom_sf(data = usa, fill = "#DCDCDC", lwd = 0)+
+       geom_sf(data = ce_map, fill = "#0072B2", color = "#0072B2") +
+       geom_sf(data = wdpa_map, fill = "#E69F00", color = "#E69F00") +
+     coord_sf(crs = st_crs(4135), xlim = c(-161, -154), ylim = c(18, 
+         23), expand = FALSE, datum = NA) +theme_minimal() +
+     theme(panel.border = element_rect(colour = "black", fill=NA))
+```
+
+
+```{r, fig.height= 5, fi.width = 6, dpi = 600}
+mainland +
+ annotation_custom(
+      grob = ggplotGrob(alaska),
+      xmin = -2800000,
+      xmax = -2750000 + (1600000 - (-2400000))/2.5,
+      ymin = -2450000,
+      ymax = -2450000 + (2500000 - 200000)/2.5
+  ) +
+  annotation_custom(
+      grob = ggplotGrob(hawaii),
+      xmin = -1250000,
+      xmax = -1250000 + (-154 - (-161))*120000,
+      ymin = -2450000,
+      ymax = -2450000 + (23 - 18)*120000
+  )
+```
+
+
+```{r}
+regions <- st_read("../data/cb_2018_us_division_500k.shp")
+```
+
+(1) priorities ce and pa
+(2) averages for regions
+(4) maps
+
+```{r}
+ce <- st_transform(ce, crs = st_crs(amp_priority))
+pa_priority <- st_intersection(st_buffer(wdpa_usa,0), st_buffer(priority_index,0))
+am_ce <- st_intersection(st_buffer(ce,0), st_buffer(amp_priority,0))
+```
+
+```{r}
+ce_priority<- st_read("../data/ce_priority.shp")
+pa_priority <-st_read("../data/pa_priority.shp")
+```
+
+```{r}
+ce_priority_i <- as.tibble(ce_priority) %>%
+  group_by(year_st) %>%
+  summarise(priority_i = sum(Prirty_*as.numeric(area)),
+            area = sum(as.numeric(area)),
+            .groups = "drop") %>% 
+  mutate(priority_i = priority_i/area,
+         pa_ce = "ce") %>%
+  rename(STATUS_ = "year_st")
+```
+
+```{r}
+pa_priority_i <- as.tibble(pa_priority) %>%
+  group_by(STATUS_) %>%
+  summarise(priority_i = sum(Prirty_*as.numeric(area)),
+            area = sum(as.numeric(area)),
+            .groups = "drop") %>% 
+  mutate(priority_i = priority_i/area,
+         pa_ce = "pa") 
+pa_priority_i
+```
+
+```{r}
+a<- pa_priority_i %>%
+  bind_rows(ce_priority_i) %>%
+  filter(STATUS_ > 2010) %>%
+  group_by(pa_ce) %>%
+  summarise(priority_i = sum(priority_i*as.numeric(area)),
+            area = sum(as.numeric(area)),
+            unweighted = mean(priority_i),
+            .groups = "drop") %>%
+  mutate(priority_i = priority_i/area) %>%
+  ggplot(aes(x = pa_ce, y =unweighted)) +geom_bar(stat = "identity") +
+  
+b <- pa_priority_i %>%
+  bind_rows(ce_priority_i) %>%
+  filter(STATUS_<2011) %>%
+  group_by(pa_ce) %>%
+  summarise(priority_i = sum(priority_i*as.numeric(area)),
+            area = sum(as.numeric(area)),
+            .groups = "drop") %>%
+  mutate(priority_i = priority_i/area) %>%
+  ggplot(aes(x = pa_ce, y =priority_i)) +geom_bar(stat = "identity") 
+```

@@ -3,5 +3,9 @@
 .RData
 .Ruserdata
 scripts/data/
-scripts/revisions/revised-analysis_f2_cache/
-scripts/revisions/analysis-and-figures_cache/
+scripts/analysis/revised-analysis_f2_cache/
+scripts/analysis/analysis-and-figures_cache/
+scripts/analysis/analysis-and-figures_files/
+scripts/analysis/SI_files/
+scripts/analysis/SI_cache/
+scripts/analysis/figure1/

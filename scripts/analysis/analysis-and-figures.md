@@ -13,26 +13,26 @@ library(sf)
 library(tidyverse)
 ```
 
-    ## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──
+    ## ── Attaching packages
+    ## ───────────────────────────────────────
+    ## tidyverse 1.3.2 ──
 
-    ## ✓ ggplot2 3.3.5     ✓ purrr   0.3.4
-    ## ✓ tibble  3.1.6     ✓ dplyr   1.0.7
-    ## ✓ tidyr   1.1.4     ✓ stringr 1.4.0
-    ## ✓ readr   2.1.1     ✓ forcats 0.5.1
-
+    ## ✔ ggplot2 3.3.6      ✔ purrr   0.3.5 
+    ## ✔ tibble  3.1.8      ✔ dplyr   1.0.10
+    ## ✔ tidyr   1.2.1      ✔ stringr 1.4.1 
+    ## ✔ readr   2.1.3      ✔ forcats 0.5.2 
     ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-    ## x dplyr::filter() masks stats::filter()
-    ## x dplyr::lag()    masks stats::lag()
+    ## ✖ dplyr::filter() masks stats::filter()
+    ## ✖ dplyr::lag()    masks stats::lag()
 
 ``` r
 library(raster)
 ```
 
     ## Loading required package: sp
-
     ## 
     ## Attaching package: 'raster'
-
+    ## 
     ## The following object is masked from 'package:dplyr':
     ## 
     ##     select
@@ -47,7 +47,11 @@ library(psych) # for descriptives
 
     ## 
     ## Attaching package: 'psych'
-
+    ## 
+    ## The following object is masked from 'package:raster':
+    ## 
+    ##     distance
+    ## 
     ## The following objects are masked from 'package:ggplot2':
     ## 
     ##     %+%, alpha
@@ -59,7 +63,7 @@ library(zoo)
 
     ## 
     ## Attaching package: 'zoo'
-
+    ## 
     ## The following objects are masked from 'package:base':
     ## 
     ##     as.Date, as.Date.numeric
@@ -69,8 +73,8 @@ library(biscale)
 library(tigris)
 ```
 
-    ## To enable 
-    ## caching of data, set `options(tigris_use_cache = TRUE)` in your R script or .Rprofile.
+    ## To enable caching of data, set `options(tigris_use_cache = TRUE)`
+    ## in your R script or .Rprofile.
 
 ``` r
 library(ggsignif)
@@ -79,7 +83,7 @@ library(ggpubr)
 
     ## 
     ## Attaching package: 'ggpubr'
-
+    ## 
     ## The following object is masked from 'package:raster':
     ## 
     ##     rotate
@@ -107,7 +111,110 @@ mutate(future = plant_future  + tree_future + reptile_future + amphibian_future 
          `Vulnerable Carbon` = carbon_vulnerable,
          `CRENVU Richness` =  richness_crenvu, 
          `Future Richness` = future)
+
+ease_fig <- easements %>%
+  mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
+  dplyr::select(Category,carbon_vulnerable,richness_all:RSR_all, future, Date_Est, area) %>%
+  dplyr::rename(`Species Richness` = richness_all,
+         `Vulnerable Carbon` = carbon_vulnerable,
+         `CRENVU Richness` =  richness_crenvu,
+         `Future Richness` = future)
 ```
+
+``` r
+library(weights)
+```
+
+    ## Loading required package: Hmisc
+
+    ## Loading required package: lattice
+
+    ## Loading required package: survival
+
+    ## Loading required package: Formula
+
+    ## 
+    ## Attaching package: 'Hmisc'
+
+    ## The following object is masked from 'package:psych':
+    ## 
+    ##     describe
+
+    ## The following objects are masked from 'package:raster':
+    ## 
+    ##     mask, zoom
+
+    ## The following objects are masked from 'package:dplyr':
+    ## 
+    ##     src, summarize
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     format.pval, units
+
+``` r
+shapiro.test(dplyr::sample_n(fee_fig, 1000)$`Species Richness`)
+```
+
+    ## 
+    ##  Shapiro-Wilk normality test
+    ## 
+    ## data:  dplyr::sample_n(fee_fig, 1000)$`Species Richness`
+    ## W = 0.61963, p-value < 2.2e-16
+
+``` r
+wtd.t.test(x=fee_fig$`Species Richness`,
+           y=ease_fig$`Species Richness`,
+           weight=fee_fig$area,
+           weighty=ease_fig$area,
+           samedata=FALSE)
+```
+
+    ## $test
+    ## [1] "Two Sample Weighted T-Test (Welch)"
+    ## 
+    ## $coefficients
+    ##    t.value         df    p.value 
+    ##  -236.5171 42727.6230     0.0000 
+    ## 
+    ## $additional
+    ##  Difference      Mean.x      Mean.y    Std. Err 
+    ## -98.7437189 152.7950941 251.5388129   0.4174908
+
+``` r
+wtd.t.test(x=fee_fig$`Vulnerable Carbon`,
+           y=ease_fig$`Vulnerable Carbon`,
+           weight=fee_fig$area,
+           weighty=ease_fig$area,
+           samedata=FALSE)
+```
+
+    ## $test
+    ## [1] "Two Sample Weighted T-Test (Welch)"
+    ## 
+    ## $coefficients
+    ##     t.value          df     p.value 
+    ##   -86.56398 64774.52662     0.00000 
+    ## 
+    ## $additional
+    ##  Difference      Mean.x      Mean.y    Std. Err 
+    ## -26.8234316  45.5747785  72.3982101   0.3098683
+
+``` r
+stats::t.test(fee_fig$`Vulnerable Carbon`, ease_fig$`Vulnerable Carbon`)
+```
+
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  fee_fig$`Vulnerable Carbon` and ease_fig$`Vulnerable Carbon`
+    ## t = 11.353, df = 59973, p-value < 2.2e-16
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  2.839349 4.024294
+    ## sample estimates:
+    ## mean of x mean of y 
+    ##  80.00855  76.57673
 
 Bind fee and easement data for figure 3
 
@@ -133,13 +240,13 @@ fig3a <- easements %>%
   filter(Category == "fee") %>%
   ggplot(aes(x = time, y = value, col = Category)) + geom_boxplot() +
   facet_wrap(vars(name), ncol = 4, scales = "free_y") +
-  stat_compare_means(aes(group = time), vjust = 1, hjust = -1, label = "p.signif", color = "black", size=4) + 
+  stat_compare_means(aes(group = time), method = "t.test", vjust = 1, hjust = -1, label = "p.signif", color = "black", size=4) + 
   scale_color_manual(values=c("#E69F00")) +
   theme_classic() +
   theme(legend.position = "none",
         legend.title = element_blank()) +
   theme(axis.title.x = element_blank()) +
-  labs(y = "mean value per parcel") 
+  labs(y = "mean value per parcel") + theme(text = element_text(size = 12))
 
 fig3b <- easements %>%
   mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
@@ -162,13 +269,13 @@ fig3b <- easements %>%
   filter(Category == "Easement") %>%
   ggplot(aes(x = time, y = value, col = Category)) + geom_boxplot() +
   facet_wrap(vars(name), ncol = 4, scales = "free_y") +
-  stat_compare_means(aes(group = time), vjust = 1, hjust = -1, label = "p.signif", color = "black", size=4) + 
+  stat_compare_means(aes(group = time), method = "t.test", vjust = 1, hjust = -1, label = "p.signif", color = "black", size=4) + 
   scale_color_manual(values=c("#0072B2")) +
   theme_classic() +
   theme(legend.position = "none",
         legend.title = element_blank()) +
   theme(axis.title.x = element_blank()) +
-  labs(y = "mean value per parcel") 
+  labs(y = "mean value per parcel") + theme(text = element_text(size = 11.5))
 ```
 
 ``` r
@@ -187,6 +294,173 @@ fig3b/fig3a + plot_annotation(tag_levels = 'A')
 ```
 
 ![](analysis-and-figures_files/figure-gfm/fig3-1.png)<!-- -->
+
+area stats
+
+``` r
+areas <- easements %>%
+  mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
+  dplyr::select(Category,carbon_vulnerable,richness_all:RSR_all, future, Date_Est, area) %>%
+  dplyr::rename(`Species Richness` = richness_all,
+         `Vulnerable Carbon` = carbon_vulnerable,
+         `CRENVU Richness` =  richness_crenvu,
+         `Future Richness` = future) %>%
+  drop_na() %>%
+  rbind(fee_fig) %>%
+  mutate(area = area/10000) %>%
+  group_by(Category) %>%
+  summarise(mean = mean(area),
+            SD = SD(area),
+            sum = (sum(area)))
+
+areas$sum[1]/areas$sum[2]
+```
+
+    ## [1] 0.04664362
+
+t-test stats for paper
+
+``` r
+easements_ttest <- easements %>%
+  mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
+  dplyr::select(Category,carbon_vulnerable,richness_all:RSR_all, future, Date_Est, area) %>%
+  dplyr::rename(`Species Richness` = richness_all,
+         `Vulnerable Carbon` = carbon_vulnerable,
+         `CRENVU Richness` =  richness_crenvu,
+         `Future Richness` = future) %>%
+  drop_na() %>%
+  rbind(fee_fig) %>%
+  mutate(time = ifelse(Date_Est <2000, NA, 
+                       ifelse(Date_Est > 1999 & Date_Est < 2010, "2000-2009", "2010-2019"))) %>%
+  drop_na() %>%
+  dplyr::select(-c(Date_Est, area, RSR_all)) %>%
+  pivot_longer(-c(Category, time)) %>%
+  mutate(name = factor(name, levels = c("Species Richness", 
+                                        "CRENVU Richness",
+                                        "Future Richness",
+                                        "Vulnerable Carbon"))) %>%
+  filter(Category == "Easement")
+
+easements_ttest %>%
+  group_by(name, time) %>%
+  summarise(mean = mean(value),
+            SD = SD(value))
+```
+
+    ## `summarise()` has grouped output by 'name'. You can override using the
+    ## `.groups` argument.
+
+    ## # A tibble: 8 × 4
+    ## # Groups:   name [4]
+    ##   name              time        mean    SD
+    ##   <fct>             <chr>      <dbl> <dbl>
+    ## 1 Species Richness  2000-2009 259.   21.0 
+    ## 2 Species Richness  2010-2019 262.   19.3 
+    ## 3 CRENVU Richness   2000-2009   3.57  1.49
+    ## 4 CRENVU Richness   2010-2019   3.79  1.43
+    ## 5 Future Richness   2000-2009 157.   76.6 
+    ## 6 Future Richness   2010-2019 165.   80.6 
+    ## 7 Vulnerable Carbon 2000-2009  76.9  41.0 
+    ## 8 Vulnerable Carbon 2010-2019  77.6  42.8
+
+``` r
+easements_ttest %>% rename(variable = name) %>%
+  dplyr::select(-Category) %>%
+  group_by(time, variable) %>% 
+  summarise(value = list(value)) %>% 
+  spread(time, value) %>% 
+  group_by(variable) %>%
+  mutate(p_value = t.test(unlist(`2000-2009`), unlist(`2010-2019`))$p.value,
+         t_value = t.test(unlist(`2000-2009`), unlist(`2010-2019`))$statistic,
+         estimate_2000 = t.test(unlist(`2000-2009`), unlist(`2010-2019`))$estimate[1],
+         estimate_2010 = t.test(unlist(`2000-2009`), unlist(`2010-2019`))$estimate[2],
+         df =  t.test(unlist(`2000-2009`), unlist(`2010-2019`))$parameter)
+```
+
+    ## `summarise()` has grouped output by 'time'. You can override using the
+    ## `.groups` argument.
+
+    ## # A tibble: 4 × 8
+    ## # Groups:   variable [4]
+    ##   variable          `2000-2009`   2010-…¹  p_value t_value estim…² estim…³    df
+    ##   <fct>             <list>        <list>     <dbl>   <dbl>   <dbl>   <dbl> <dbl>
+    ## 1 Species Richness  <dbl [7,272]> <dbl>   5.10e-16  -8.12   259.    262.   9926.
+    ## 2 CRENVU Richness   <dbl [7,272]> <dbl>   7.44e-16  -8.08     3.57    3.79 9636.
+    ## 3 Future Richness   <dbl [7,272]> <dbl>   6.21e- 8  -5.42   157.    165.   8949.
+    ## 4 Vulnerable Carbon <dbl [7,272]> <dbl>   4.10e- 1  -0.824   76.9    77.6  9001.
+    ## # … with abbreviated variable names ¹​`2010-2019`, ²​estimate_2000,
+    ## #   ³​estimate_2010
+
+``` r
+fee_ttest <- easements %>%
+  mutate(future = plant_future  + tree_future + reptile_future + amphibian_future + bird_future + mammal_future) %>%
+  dplyr::select(Category,carbon_vulnerable,richness_all:RSR_all, future, Date_Est, area) %>%
+  dplyr::rename(`Species Richness` = richness_all,
+         `Vulnerable Carbon` = carbon_vulnerable,
+         `CRENVU Richness` =  richness_crenvu,
+         `Future Richness` = future) %>%
+  drop_na() %>%
+  rbind(fee_fig) %>%
+  mutate(time = ifelse(Date_Est <2000, NA, 
+                       ifelse(Date_Est > 1999 & Date_Est < 2010, "2000-2009", "2010-2019"))) %>%
+  drop_na() %>%
+  dplyr::select(-c(Date_Est, area, RSR_all)) %>%
+  pivot_longer(-c(Category, time)) %>%
+  mutate(name = factor(name, levels = c("Species Richness", 
+                                        "CRENVU Richness",
+                                        "Future Richness",
+                                        "Vulnerable Carbon"))) %>%
+  filter(Category == "fee")
+
+fee_ttest %>%
+  group_by(name, time) %>%
+  summarise(mean = mean(value),
+            SD = SD(value))
+```
+
+    ## `summarise()` has grouped output by 'name'. You can override using the
+    ## `.groups` argument.
+
+    ## # A tibble: 8 × 4
+    ## # Groups:   name [4]
+    ##   name              time        mean    SD
+    ##   <fct>             <chr>      <dbl> <dbl>
+    ## 1 Species Richness  2000-2009 257.   35.2 
+    ## 2 Species Richness  2010-2019 255.   34.7 
+    ## 3 CRENVU Richness   2000-2009   3.39  1.73
+    ## 4 CRENVU Richness   2010-2019   3.03  1.68
+    ## 5 Future Richness   2000-2009 201.   53.5 
+    ## 6 Future Richness   2010-2019 205.   68.8 
+    ## 7 Vulnerable Carbon 2000-2009  82.4  40.2 
+    ## 8 Vulnerable Carbon 2010-2019  82.7  43.3
+
+``` r
+fee_ttest %>% rename(variable = name) %>%
+  dplyr::select(-Category) %>%
+  group_by(time, variable) %>% 
+  summarise(value = list(value)) %>% 
+  spread(time, value) %>% 
+  group_by(variable) %>%
+  mutate(p_value = t.test(unlist(`2000-2009`), unlist(`2010-2019`))$p.value,
+         t_value = t.test(unlist(`2000-2009`), unlist(`2010-2019`))$statistic,
+         estimate_2000 = t.test(unlist(`2000-2009`), unlist(`2010-2019`))$estimate[1],
+         estimate_2010 = t.test(unlist(`2000-2009`), unlist(`2010-2019`))$estimate[2],
+         df =  t.test(unlist(`2000-2009`), unlist(`2010-2019`))$parameter)
+```
+
+    ## `summarise()` has grouped output by 'time'. You can override using the
+    ## `.groups` argument.
+
+    ## # A tibble: 4 × 8
+    ## # Groups:   variable [4]
+    ##   variable          `2000-2009`   2010-…¹  p_value t_value estim…² estim…³    df
+    ##   <fct>             <list>        <list>     <dbl>   <dbl>   <dbl>   <dbl> <dbl>
+    ## 1 Species Richness  <dbl [3,330]> <dbl>   7.28e- 2   1.80   257.    255.   1947.
+    ## 2 CRENVU Richness   <dbl [3,330]> <dbl>   8.22e-10   6.17     3.39    3.03 1974.
+    ## 3 Future Richness   <dbl [3,330]> <dbl>   8.53e- 2  -1.72   201.    205.   1597.
+    ## 4 Vulnerable Carbon <dbl [3,330]> <dbl>   8.50e- 1  -0.190   82.4    82.7  1810.
+    ## # … with abbreviated variable names ¹​`2010-2019`, ²​estimate_2000,
+    ## #   ³​estimate_2010
 
 # Figure 2:
 
@@ -211,7 +485,8 @@ ag_e <- easements %>%
   ungroup()
 ```
 
-    ## `summarise()` has grouped output by 'Category'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'Category'. You can override using the
+    ## `.groups` argument.
 
 ``` r
 ag_f <- fee %>%
@@ -234,7 +509,8 @@ ag_f <- fee %>%
   ungroup() 
 ```
 
-    ## `summarise()` has grouped output by 'Category'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'Category'. You can override using the
+    ## `.groups` argument.
 
 ``` r
 ag_b <- background %>%
@@ -282,7 +558,8 @@ f2public <- fee %>%
   ungroup() 
 ```
 
-    ## `summarise()` has grouped output by 'Category'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'Category'. You can override using the
+    ## `.groups` argument.
 
 ``` r
 f2private <- f2public %>%
@@ -352,7 +629,8 @@ fig2a <- ag_e %>%
   theme(legend.title = element_blank(),
         legend.position = "bottom") +
   theme(axis.title.x = element_blank()) +
-  labs(y = "% difference from national mean value")
+  labs(y = "% difference from national mean value") +
+  theme(text = element_text(size = 11.5))
 ```
 
     ## Joining, by = "bind"
@@ -570,24 +848,7 @@ col.matrixQ <- colmat(nbreaks = nBreaks, breakstyle = "quantile",
                        saveLeg = FALSE, plotLeg = TRUE)
 ```
 
-    ## Loading required package: classInt
-
-    ## 
-    ## Attaching package: 'data.table'
-
-    ## The following object is masked from 'package:raster':
-    ## 
-    ##     shift
-
-    ## The following objects are masked from 'package:dplyr':
-    ## 
-    ##     between, first, last
-
-    ## The following object is masked from 'package:purrr':
-    ## 
-    ##     transpose
-
-![](analysis-and-figures_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](analysis-and-figures_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 ``` r
 # create the bivariate raster
@@ -647,12 +908,10 @@ fee_line <- read_csv("../data/fee_lat_long.csv") %>%
 ```
 
     ## Rows: 190738 Columns: 5
-
     ## ── Column specification ────────────────────────────────────────────────────────
     ## Delimiter: ","
     ## chr (1): Category
     ## dbl (4): GAP_Sts, area, lon, lat
-
     ## 
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -674,12 +933,10 @@ public_line <- read_csv("../data/fee_lat_long.csv") %>%
 ```
 
     ## Rows: 190738 Columns: 5
-
     ## ── Column specification ────────────────────────────────────────────────────────
     ## Delimiter: ","
     ## chr (1): Category
     ## dbl (4): GAP_Sts, area, lon, lat
-
     ## 
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -700,12 +957,10 @@ easement_line <- read_csv("../data/easement_lat_long.csv") %>%
 ```
 
     ## Rows: 45735 Columns: 5
-
     ## ── Column specification ────────────────────────────────────────────────────────
     ## Delimiter: ","
     ## chr (1): Category
     ## dbl (4): GAP_Sts, area, lon, lat
-
     ## 
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -790,12 +1045,10 @@ fee_line <- read_csv("../data/fee_lat_long.csv") %>%
 ```
 
     ## Rows: 190738 Columns: 5
-
     ## ── Column specification ────────────────────────────────────────────────────────
     ## Delimiter: ","
     ## chr (1): Category
     ## dbl (4): GAP_Sts, area, lon, lat
-
     ## 
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -817,12 +1070,10 @@ public_line <- read_csv("../data/fee_lat_long.csv") %>%
 ```
 
     ## Rows: 190738 Columns: 5
-
     ## ── Column specification ────────────────────────────────────────────────────────
     ## Delimiter: ","
     ## chr (1): Category
     ## dbl (4): GAP_Sts, area, lon, lat
-
     ## 
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -843,12 +1094,10 @@ easement_line <- read_csv("../data/easement_lat_long.csv") %>%
 ```
 
     ## Rows: 45735 Columns: 5
-
     ## ── Column specification ────────────────────────────────────────────────────────
     ## Delimiter: ","
     ## chr (1): Category
     ## dbl (4): GAP_Sts, area, lon, lat
-
     ## 
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -917,7 +1166,7 @@ side <- richness_pts %>%
 side
 ```
 
-![](analysis-and-figures_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](analysis-and-figures_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 ``` r
 library(patchwork)
@@ -953,7 +1202,8 @@ ag_e <- easements %>%
   ungroup()
 ```
 
-    ## `summarise()` has grouped output by 'Category', 'State_Nm'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'Category', 'State_Nm'. You can override
+    ## using the `.groups` argument.
 
 ``` r
 ag_public <- fee %>%
@@ -976,7 +1226,8 @@ ag_public <- fee %>%
   dplyr::select(State_Nm, total_area, richness_all, carbon_vulnerable)
 ```
 
-    ## `summarise()` has grouped output by 'Category', 'State_Nm'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'Category', 'State_Nm'. You can override
+    ## using the `.groups` argument.
 
 ``` r
 ag_fee <- fee %>%
@@ -999,7 +1250,8 @@ ag_fee <- fee %>%
   dplyr::select(State_Nm, total_area, richness_all, carbon_vulnerable)
 ```
 
-    ## `summarise()` has grouped output by 'Category', 'State_Nm'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'Category', 'State_Nm'. You can override
+    ## using the `.groups` argument.
 
 ``` r
 ag_b <- background %>%
@@ -1053,10 +1305,10 @@ private_data
     ##  1 WV        -0.000259    -0.00162   60124233233. -0.000942
     ##  2 FL         0.00409     -0.0813   147909622606. -0.0386  
     ##  3 IL        -0.000949    -0.000369 145768163696. -0.000659
-    ##  4 MN        -0.00128      0.00520  216289832864.  0.00196 
+    ##  4 MN        -0.00128      0.00520  216289833462.  0.00196 
     ##  5 MD        -0.00771     -0.0112    29514295869. -0.00944 
     ##  6 RI        -0.0355      -0.0126     3440607535. -0.0240  
-    ##  7 ID        -0.000728     0.00803  203229630239.  0.00365 
+    ##  7 ID        -0.000728     0.00803  203229630366.  0.00365 
     ##  8 NH        -0.000417    -0.00951   22084635128. -0.00496 
     ##  9 NC        -0.00252     -0.0362   134752067788. -0.0193  
     ## 10 VT        -0.00000831  -0.00375   23242008117. -0.00188 
@@ -1121,7 +1373,9 @@ background_shp <- states(cb = FALSE) %>%
   st_transform(crs= st_crs(2163))
 ```
 
-    ##   |                                                                              |                                                                      |   0%  |                                                                              |                                                                      |   1%  |                                                                              |=                                                                     |   1%  |                                                                              |=                                                                     |   2%  |                                                                              |==                                                                    |   2%  |                                                                              |==                                                                    |   3%  |                                                                              |===                                                                   |   4%  |                                                                              |===                                                                   |   5%  |                                                                              |====                                                                  |   5%  |                                                                              |====                                                                  |   6%  |                                                                              |=====                                                                 |   6%  |                                                                              |=====                                                                 |   7%  |                                                                              |=====                                                                 |   8%  |                                                                              |======                                                                |   8%  |                                                                              |======                                                                |   9%  |                                                                              |=======                                                               |   9%  |                                                                              |=======                                                               |  10%  |                                                                              |=======                                                               |  11%  |                                                                              |========                                                              |  11%  |                                                                              |========                                                              |  12%  |                                                                              |=========                                                             |  12%  |                                                                              |=========                                                             |  13%  |                                                                              |==========                                                            |  14%  |                                                                              |==========                                                            |  15%  |                                                                              |===========                                                           |  15%  |                                                                              |===========                                                           |  16%  |                                                                              |============                                                          |  16%  |                                                                              |============                                                          |  17%  |                                                                              |============                                                          |  18%  |                                                                              |=============                                                         |  18%  |                                                                              |=============                                                         |  19%  |                                                                              |==============                                                        |  19%  |                                                                              |==============                                                        |  20%  |                                                                              |==============                                                        |  21%  |                                                                              |===============                                                       |  21%  |                                                                              |===============                                                       |  22%  |                                                                              |================                                                      |  23%  |                                                                              |=================                                                     |  24%  |                                                                              |=================                                                     |  25%  |                                                                              |==================                                                    |  25%  |                                                                              |========================                                              |  34%  |                                                                              |========================                                              |  35%  |                                                                              |=========================                                             |  35%  |                                                                              |=========================                                             |  36%  |                                                                              |==========================                                            |  36%  |                                                                              |==========================                                            |  37%  |                                                                              |==========================                                            |  38%  |                                                                              |===========================                                           |  38%  |                                                                              |===========================                                           |  39%  |                                                                              |============================                                          |  39%  |                                                                              |============================                                          |  40%  |                                                                              |============================                                          |  41%  |                                                                              |=============================                                         |  41%  |                                                                              |=============================                                         |  42%  |                                                                              |==============================                                        |  42%  |                                                                              |==============================                                        |  43%  |                                                                              |===============================                                       |  44%  |                                                                              |===============================                                       |  45%  |                                                                              |================================                                      |  45%  |                                                                              |================================                                      |  46%  |                                                                              |=================================                                     |  46%  |                                                                              |=================================                                     |  47%  |                                                                              |=================================                                     |  48%  |                                                                              |==================================                                    |  48%  |                                                                              |==================================                                    |  49%  |                                                                              |===================================                                   |  49%  |                                                                              |===================================                                   |  50%  |                                                                              |===================================                                   |  51%  |                                                                              |====================================                                  |  51%  |                                                                              |====================================                                  |  52%  |                                                                              |=====================================                                 |  52%  |                                                                              |=====================================                                 |  53%  |                                                                              |======================================                                |  54%  |                                                                              |======================================                                |  55%  |                                                                              |=======================================                               |  55%  |                                                                              |=======================================                               |  56%  |                                                                              |========================================                              |  56%  |                                                                              |========================================                              |  57%  |                                                                              |========================================                              |  58%  |                                                                              |=========================================                             |  58%  |                                                                              |=========================================                             |  59%  |                                                                              |==========================================                            |  59%  |                                                                              |==========================================                            |  60%  |                                                                              |==========================================                            |  61%  |                                                                              |===========================================                           |  61%  |                                                                              |===========================================                           |  62%  |                                                                              |============================================                          |  62%  |                                                                              |============================================                          |  63%  |                                                                              |============================================                          |  64%  |                                                                              |=============================================                         |  64%  |                                                                              |=============================================                         |  65%  |                                                                              |==============================================                        |  65%  |                                                                              |==============================================                        |  66%  |                                                                              |===============================================                       |  67%  |                                                                              |===============================================                       |  68%  |                                                                              |================================================                      |  68%  |                                                                              |================================================                      |  69%  |                                                                              |=================================================                     |  69%  |                                                                              |=================================================                     |  70%  |                                                                              |=================================================                     |  71%  |                                                                              |==================================================                    |  71%  |                                                                              |==================================================                    |  72%  |                                                                              |===================================================                   |  72%  |                                                                              |===================================================                   |  73%  |                                                                              |====================================================                  |  74%  |                                                                              |====================================================                  |  75%  |                                                                              |=====================================================                 |  75%  |                                                                              |=====================================================                 |  76%  |                                                                              |======================================================                |  76%  |                                                                              |======================================================                |  77%  |                                                                              |======================================================                |  78%  |                                                                              |=======================================================               |  78%  |                                                                              |=======================================================               |  79%  |                                                                              |========================================================              |  79%  |                                                                              |========================================================              |  80%  |                                                                              |========================================================              |  81%  |                                                                              |=========================================================             |  81%  |                                                                              |=========================================================             |  82%  |                                                                              |==========================================================            |  82%  |                                                                              |==========================================================            |  83%  |                                                                              |===========================================================           |  84%  |                                                                              |===========================================================           |  85%  |                                                                              |============================================================          |  85%  |                                                                              |============================================================          |  86%  |                                                                              |=============================================================         |  86%  |                                                                              |=============================================================         |  87%  |                                                                              |=============================================================         |  88%  |                                                                              |==============================================================        |  88%  |                                                                              |==============================================================        |  89%  |                                                                              |===============================================================       |  90%  |                                                                              |===============================================================       |  91%  |                                                                              |================================================================      |  91%  |                                                                              |================================================================      |  92%  |                                                                              |=================================================================     |  92%  |                                                                              |=================================================================     |  93%  |                                                                              |==================================================================    |  94%  |                                                                              |==================================================================    |  95%  |                                                                              |===================================================================   |  95%  |                                                                              |===================================================================   |  96%  |                                                                              |====================================================================  |  96%  |                                                                              |====================================================================  |  97%  |                                                                              |====================================================================  |  98%  |                                                                              |===================================================================== |  98%  |                                                                              |===================================================================== |  99%  |                                                                              |======================================================================| 100%
+    ## Retrieving data for the year 2020
+
+    ##   |                                                                              |                                                                      |   0%  |                                                                              |                                                                      |   1%  |                                                                              |=                                                                     |   1%  |                                                                              |=                                                                     |   2%  |                                                                              |==                                                                    |   2%  |                                                                              |==                                                                    |   3%  |                                                                              |===                                                                   |   5%  |                                                                              |====                                                                  |   5%  |                                                                              |=====                                                                 |   7%  |                                                                              |======                                                                |   8%  |                                                                              |======                                                                |   9%  |                                                                              |========                                                              |  12%  |                                                                              |==========                                                            |  14%  |                                                                              |==========                                                            |  15%  |                                                                              |===========                                                           |  15%  |                                                                              |===========                                                           |  16%  |                                                                              |============                                                          |  17%  |                                                                              |=============                                                         |  19%  |                                                                              |==============                                                        |  20%  |                                                                              |==============                                                        |  21%  |                                                                              |===============                                                       |  22%  |                                                                              |================                                                      |  23%  |                                                                              |=================                                                     |  24%  |                                                                              |=======================                                               |  33%  |                                                                              |========================                                              |  34%  |                                                                              |========================                                              |  35%  |                                                                              |=========================                                             |  36%  |                                                                              |===========================                                           |  39%  |                                                                              |============================                                          |  39%  |                                                                              |=============================                                         |  41%  |                                                                              |=============================                                         |  42%  |                                                                              |================================                                      |  46%  |                                                                              |=================================                                     |  47%  |                                                                              |===================================                                   |  49%  |                                                                              |===================================                                   |  50%  |                                                                              |===================================                                   |  51%  |                                                                              |====================================                                  |  51%  |                                                                              |====================================                                  |  52%  |                                                                              |=====================================                                 |  52%  |                                                                              |=====================================                                 |  53%  |                                                                              |=====================================                                 |  54%  |                                                                              |======================================                                |  54%  |                                                                              |======================================                                |  55%  |                                                                              |=======================================                               |  55%  |                                                                              |=======================================                               |  56%  |                                                                              |========================================                              |  57%  |                                                                              |========================================                              |  58%  |                                                                              |=========================================                             |  58%  |                                                                              |=========================================                             |  59%  |                                                                              |==========================================                            |  59%  |                                                                              |==========================================                            |  60%  |                                                                              |==========================================                            |  61%  |                                                                              |===========================================                           |  61%  |                                                                              |===========================================                           |  62%  |                                                                              |============================================                          |  63%  |                                                                              |=============================================                         |  64%  |                                                                              |==============================================                        |  65%  |                                                                              |================================================                      |  68%  |                                                                              |=================================================                     |  69%  |                                                                              |==================================================                    |  71%  |                                                                              |==================================================                    |  72%  |                                                                              |===================================================                   |  73%  |                                                                              |====================================================                  |  75%  |                                                                              |======================================================                |  77%  |                                                                              |========================================================              |  81%  |                                                                              |=========================================================             |  81%  |                                                                              |=========================================================             |  82%  |                                                                              |==========================================================            |  82%  |                                                                              |==========================================================            |  83%  |                                                                              |===========================================================           |  84%  |                                                                              |===========================================================           |  85%  |                                                                              |============================================================          |  85%  |                                                                              |============================================================          |  86%  |                                                                              |=============================================================         |  86%  |                                                                              |=============================================================         |  87%  |                                                                              |=============================================================         |  88%  |                                                                              |==============================================================        |  88%  |                                                                              |==============================================================        |  89%  |                                                                              |===============================================================       |  89%  |                                                                              |===============================================================       |  90%  |                                                                              |===============================================================       |  91%  |                                                                              |================================================================      |  91%  |                                                                              |================================================================      |  92%  |                                                                              |=================================================================     |  92%  |                                                                              |=================================================================     |  93%  |                                                                              |==================================================================    |  94%  |                                                                              |==================================================================    |  95%  |                                                                              |===================================================================   |  95%  |                                                                              |===================================================================   |  96%  |                                                                              |====================================================================  |  97%  |                                                                              |====================================================================  |  98%  |                                                                              |===================================================================== |  98%  |                                                                              |===================================================================== |  99%  |                                                                              |======================================================================|  99%  |                                                                              |======================================================================| 100%
 
 ``` r
 subnational_ease_map = ease_data %>% 

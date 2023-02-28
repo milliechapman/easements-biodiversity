@@ -98,6 +98,35 @@ extract_fun <- function(x) {
 }
 ```
 
+#NCED
+
+```{r}
+nced <- st_read("../data/nced/NCED_Polygons_06232022.shp") 
+
+nced <- nced |>
+  dplyr::mutate(valid =st_is_valid(nced)) %>% 
+  dplyr::filter(valid=="TRUE") %>%
+  filter(gapcat == "1" | gapcat == "2") |>
+  mutate(area = st_area(geometry)) 
+st_crs(nced) <- crs(easements)
+
+# rename etc..
+nced <- nced |>
+  rename(Date_Est = year_est,
+         GAT_Sts = gapcat) |>
+  mutate(Category = "Easement")  |>
+  mutate(area = st_area(geometry))
+
+```
+
+```{r}
+nced_extract <- nced |> extract_fun()
+```
+
+```{r}
+write_csv(nced_extract, "../data/summary_richness/nced_extract.csv")
+```
+
 # Region 1
 
 ```{r}
@@ -198,7 +227,6 @@ fee_R3_extract %>%
 ```
 
 
-
 # Region 4
 
 ```{r  warning = FALSE}
@@ -242,7 +270,10 @@ easement_R5 <- easement_R5 %>%
   dplyr::mutate(valid =st_is_valid(easement_R5)) %>% 
   dplyr::filter(valid=="TRUE") %>%
   filter(GAP_Sts==1|GAP_Sts==2) %>%
-  filter(GIS_Acres>1) 
+  filter(GIS_Acres>1,
+         Comments != "GENERAL PLANNING ONLY-not a legal representation of the easement boundary.")
+
+plot(easement_R5)
 
 easement_R5_extract <- extract_fun(easement_R5)
 fee_R5_extract <- extract_fun(fee_R5)

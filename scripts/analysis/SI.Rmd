@@ -1,6 +1,6 @@
 ---
 title: "Supporting Information"
-subtitle: "The potential contribution of private lands to U.S. 30x30 conservation"
+subtitle: "Leveraging private lands to meet 2030 biodiversity targets in the United States"
 output: pdf_document
 ---
 
@@ -11,31 +11,44 @@ library(raster)
 library(ggsignif)
 library(ggpubr)
 library(patchwork)
+library(kableExtra)
+library(MatchIt)
+library("lmtest")
+library("sandwich")
+library("boot")
+library("survival")
 ```
 
 ```{r warning=FALSE, message=FALSE, include = FALSE, cache=TRUE}
-easements1 <- read_csv("../data/summary_richness/easement_R1_extract.csv")
-easements2 <- read_csv("../data/summary_richness/easement_R2_extract.csv")
-easements3 <- read_csv("../data/summary_richness/easement_R3_extract.csv")
-easements4 <- read_csv("../data/summary_richness/easement_R4_extract.csv")
-easements5 <- read_csv("../data/summary_richness/easement_R5_extract.csv")
-easements6 <- read_csv("../data/summary_richness/easement_R6_extract.csv")
-easements7 <- read_csv("../data/summary_richness/easement_R7_extract.csv")
-easements8 <- read_csv("../data/summary_richness/easement_R8_extract.csv")
-easements9 <- read_csv("../data/summary_richness/easement_R9_extract.csv")
-easements10 <- read_csv("../data/summary_richness/easement_R10_extract.csv")
-easements11 <- read_csv("../data/summary_richness/easement_R11_extract.csv")
-easements12 <- read_csv("../data/summary_richness/easement_R12_extract.csv")
+# easements1 <- read_csv("../data/summary_richness/easement_R1_extract.csv")
+# easements2 <- read_csv("../data/summary_richness/easement_R2_extract.csv")
+# easements3 <- read_csv("../data/summary_richness/easement_R3_extract.csv")
+# easements4 <- read_csv("../data/summary_richness/easement_R4_extract.csv")
+# easements5 <- read_csv("../data/summary_richness/easement_R5_extract.csv")
+# easements6 <- read_csv("../data/summary_richness/easement_R6_extract.csv")
+# easements7 <- read_csv("../data/summary_richness/easement_R7_extract.csv")
+# easements8 <- read_csv("../data/summary_richness/easement_R8_extract.csv")
+# easements9 <- read_csv("../data/summary_richness/easement_R9_extract.csv")
+# easements10 <- read_csv("../data/summary_richness/easement_R10_extract.csv")
+# easements11 <- read_csv("../data/summary_richness/easement_R11_extract.csv")
+# easements12 <- read_csv("../data/summary_richness/easement_R12_extract.csv")
+# 
+# easements <- rbind(easements1, easements2,easements3, easements4, easements5, easements6, easements7,
+#                    easements8, easements9, easements10, easements11, easements12)
+# rm(easements1, easements2,easements3, easements4, easements5, easements6, easements7,
+#                    easements8, easements9, easements10, easements11, easements12)
+# 
+# easements <- easements %>%
+#   dplyr::select(Category, Mang_Type, Des_Tp, State_Nm, Date_Est, Access_Dt, GAP_Sts,EHoldTyp, Loc_Ds, Own_Type,
+#          mammal_mean:area) %>% 
+#   filter(Des_Tp == "CONE")|>
+#   filter(area > 1000)
 
-easements <- rbind(easements1, easements2,easements3, easements4, easements5, easements6, easements7,
-                   easements8, easements9, easements10, easements11, easements12)
-rm(easements1, easements2,easements3, easements4, easements5, easements6, easements7,
-                   easements8, easements9, easements10, easements11, easements12)
+easements <- read_csv("../data/summary_richness/nced_extract.csv") |>
+  filter(area > 1000) |>
+  rename(GAP_Sts = GAT_Sts)
 
-easements <- easements %>%
-  dplyr::select(Category, Mang_Type, Des_Tp, State_Nm, Date_Est, Access_Dt, GAP_Sts,EHoldTyp, Loc_Ds, Own_Type,
-         mammal_mean:area) %>% 
-  filter(Des_Tp == "CONE") 
+easements |> group_by(GAP_Sts) |> count()
 ```
 
 ```{r warning = FALSE, include=FALSE, cache=TRUE}
@@ -60,19 +73,62 @@ unique(fee$Mang_Type)
 fee <- fee %>%
   dplyr::select(Category, Mang_Type, Des_Tp, State_Nm, Date_Est, GAP_Sts, Own_Type,
          mammal_mean:area)  %>%
-    mutate(Category = "fee")
+    mutate(Category = "fee") |>
+  filter(area > 1000)  |> filter(Mang_Type %in% c("FED", "STAT", "LOC"))|>
+  arrange(-area)
 ```
 
 
-```{r include = FALSE}
+```{r warning=FALSE, message=FALSE, include = FALSE}
+fee_summary <- fee %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2" ) %>%
+  dplyr::select(Category, GAP_Sts,Date_Est,  richness_all, carbon_vulnerable, area) 
+  
+ease_summary <- easements %>%
+  filter(GAP_Sts == "1" | GAP_Sts == "2" ) %>%
+  dplyr::select(Category,GAP_Sts,Date_Est,  richness_all, carbon_vulnerable, area)
+```
+
+
+```{r warning=FALSE, message=FALSE, include = FALSE}
+t_management <- fee_summary |> 
+  rbind(ease_summary) |>
+  group_by(Category, GAP_Sts) |>
+  summarise(area = sum(area)/10^9,
+            number = n()) 
+```
+
+
+
+```{r warning=FALSE, message=FALSE, include = FALSE}
+ease_yr_rate <- ease_summary |>
+  mutate(year_cat = ifelse(Date_Est <2002,1,2)) |>
+  #drop_na(Date_Est) |>
+  group_by(Date_Est, year_cat) |> 
+  summarise(area_year = sum(area, na.rm = TRUE)) |> ungroup() |>
+  group_by(year_cat) |>
+  summarise(area_year = mean(area_year, na.rm = TRUE))
+
+fee_yr_rate <- fee_summary |>
+  mutate(year_cat = ifelse(Date_Est <2002,1,2)) |>
+  #drop_na(Date_Est) |>
+  group_by(Date_Est, year_cat) |> 
+  summarise(area_year = sum(area, na.rm = TRUE)) |> ungroup() |>
+  group_by(year_cat) |>
+  summarise(area_year = mean(area_year, na.rm = TRUE))
+```
+
+
+
+```{r warning=FALSE, message=FALSE, include = FALSE}
 fee_match <- fee %>%
   filter(GAP_Sts == "1" | GAP_Sts == "2" ) %>%
-  dplyr::select(Category, State_Nm, richness_all, carbon_vulnerable, area) %>%
+  dplyr::select(Category,  richness_all, carbon_vulnerable, area) %>%
   mutate(type = 0) %>% drop_na()
   
 ease_match <- easements %>%
   filter(GAP_Sts == "1" | GAP_Sts == "2" ) %>%
-  dplyr::select(Category, State_Nm, richness_all, carbon_vulnerable, area) %>%
+  dplyr::select(Category,  richness_all, carbon_vulnerable, area) %>%
   mutate(type = 1) %>% drop_na()
 
 match_df <- fee_match %>% rbind(ease_match)
@@ -80,25 +136,24 @@ match_df <- fee_match %>% rbind(ease_match)
 
 All code to run analysis and reproduce main text figures is available at: https://github.com/milliechapman/easements-biodiversity
 
-**Table S1: Summary of GAP definitions and number of polygons**
+**Table S1:** Total area and number of parcels of conservation easements and fee owned protected areas per GAP status code.
 
-We classified “Protected areas” as fee owned lands managed for biodiversity (GAP 1 and GAP 2). Our analysis of “public land” vs “private land” leveraged GAP 1-4 protected areas. Because there are incomplete and erroneous polygons in the PAD-US database, we filtered out any invalid polygons from the analysis. Easement data was also acquired from the PAD-US database. US-PAD and NCED data is readily available to download at: https://www.usgs.gov/core-science-systems/science-analytics-and-synthesis/gap/science/protected-areas
+```{r}
+kable(t_management)
+```
 
-![Image Title](GAP-codes.png){width=250px}
+**Figure S1:** There is no significant correlation between parcel area and mean richness value in either (a) conservation easements (rˆ2 <0.01) or (b) protected areas (rˆ2 <0.01) (GAP 1 and GAP 2). Similarly, (c) there is no significant trend when considering all of the data (rˆ2<0.01).
 
-
-**Figure S1: There is no significant correlation between parcel area and mean richness value in either (a) conservation easements (rˆ2 <0.01) or (b) protected areas (rˆ2 <0.01) (GAP 1 and GAP 2). Similarly, (c) there is no significant trend when considering all of the data (rˆ2<0.01).**
-
-```{r echo = FALSE, message = FALSE, warning = FALSE, fig.width=7.5, fig.height= 4}
-a <- match_df %>% filter(Category == "Easement") %>% drop_na() %>%
+```{r echo = FALSE, message = FALSE, warning = FALSE, fig.width=7.5, fig.height= 3}
+a <- match_df %>% filter(Category == "Easement") %>% #drop_na() %>%
   ggplot(aes(x = log(area), y = richness_all)) +
   geom_point(color = "#0072B2")+ geom_smooth(method = "lm", se=FALSE, color="black") +
   stat_regline_equation(label.y = 350, aes(label = ..rr.label..)) +
   theme_classic() +
   labs(x = "log(area per parcel)", y = "mean species richness per parcel",
-       title = "A. Conservation Easements \n (GAP 1 and GAP 2)")
+       title = "A. Easements \n (GAP 1 and GAP 2)")
 
-b <- match_df %>% filter(Category == "fee") %>% drop_na() %>%
+b <- match_df %>% filter(Category == "fee") %>% #drop_na() %>%
   ggplot(aes(x = log(area), y = richness_all)) +
   geom_point(color = "#E69F00") +  
   geom_smooth(method = "lm", se=FALSE, color="black") +
@@ -115,12 +170,16 @@ c <- match_df %>% drop_na() %>%
   labs(x = "log(area per parcel)", y = "mean species richness per parcel",
        title = "C. All parcels \n (GAP 1 and GAP 2)")
 
+log(1000)
+
 a + b + c
 ```
 
-## Figure S3: There is no significant correlation between parcel area and mean vulnerable carbon in either (a) conservation easements (rˆ2 <0.01) or (b) protected areas (rˆ2 <0.01) (GAP 1 and GAP 2). Similarly, (c) there is no significant trend when considering all of the data (rˆ2<0.01).
+\pagebreak
 
-```{r echo = FALSE, message = FALSE, warning = FALSE, fig.width=7.5, fig.height= 4}
+**Figure S2:** There is no significant correlation between parcel area and mean vulnerable carbon in either (a) conservation easements (rˆ2 <0.01) or (b) protected areas (rˆ2 <0.01) (GAP 1 and GAP 2). Similarly, (c) there is no significant trend when considering all of the data (rˆ2<0.01).
+
+```{r echo = FALSE, message = FALSE, warning = FALSE, fig.width=7.5, fig.height= 3}
 
 a <- match_df %>% filter(Category == "Easement") %>% drop_na() %>%
   ggplot(aes(x = log(area), y = carbon_vulnerable)) +
@@ -128,7 +187,7 @@ a <- match_df %>% filter(Category == "Easement") %>% drop_na() %>%
   stat_regline_equation(label.y = 350, aes(label = ..rr.label..)) +
   theme_classic() +
   labs(x = "log(area per parcel)", y = "mean vulnerable carbon per parcel",
-       title = "A. Conservation Easements \n (GAP 1 and GAP 2)")
+       title = "A. Easements \n (GAP 1 and GAP 2)")
 
 b <- match_df %>% filter(Category == "fee") %>% drop_na() %>%
   ggplot(aes(x = log(area), y = carbon_vulnerable )) +
@@ -150,44 +209,77 @@ c <- match_df %>% drop_na() %>%
 a+b+c
 ```
 
+\pagebreak
+
+## Statistical signficance of differences in mean values
+
+First, we provide a weighted-t test of parcels, where we compare the mean of fee-owned protected area parcels
+relative to conservation easement parcels (GAP1-2) weighted by the area of the parcel
+
+```{r warning=FALSE, message=FALSE, include = FALSE}
+library(weights)
+ease_test <- match_df %>% filter(Category == "Easement") %>% drop_na()
+fee_test <- match_df %>% filter(Category == "fee") %>% drop_na()
+
+
+
+wtt2 <- wtd.t.test(x=fee_summary$`carbon_vulnerable`,
+           y=ease_summary$`carbon_vulnerable`,
+           weight=fee_summary$area,
+           weighty=ease_summary$area,
+           samedata=FALSE)
+
+wilcox.test(ease_summary$richness_all,fee_summary$richness_all, exact = FALSE, alternative = "less")
+
+wilcox.test(ease_test$carbon_vulnerable,fee_test$carbon_vulnerable, exact = FALSE, alternative = "less") 
+```
+
+**Table S2:** Area weighted t-test of species richness per parcel
+
+```{r}
+wtt1 <- wtd.t.test(x=fee_summary$`richness_all`,
+           y=ease_summary$`richness_all`,
+           weight=fee_summary$area,
+           weighty=ease_summary$area,
+           samedata=FALSE)
+wtt1
+```
+
+**Table S3:** Area weighted t-test of vulnerable per parcel
+
+```{r}
+wtt2 <- wtd.t.test(x=fee_summary$`richness_all`,
+           y=ease_summary$`richness_all`,
+           weight=fee_summary$area,
+           weighty=ease_summary$area,
+           samedata=FALSE)
+wtt2
+```
+
 ## Effect of parcel size on overall patterns
 
-However, size and state which the protected area or easement is located could confound these results. To address this, we used propensity score matching (by area) to test the average treatment effect (or richness difference) accounting for this factors.
+While our paper focuses on richness and carbon values overall, whether or not these patterns hold true on a per parcel basis might be of interest, particularly when trying to account for the potential influence of difference in parcel area on conservation targeting.
 
-```{r include = FALSE, message=FALSE, warning=FALSE}
-library("MatchIt")
-library("lmtest")
-library("sandwich")
-library("boot")
-library("survival")
-```
+We use propensity score matching to estimate the average marginal difference of mean species richness and carbon density between conservation easements and protected areas parcels accounting for the potentially confounding effect of area of parcels. 
 
-The key components of the m.out1 object are weights (the computed matching weights), subclass (matching
-pair membership), distance (the estimated propensity score), and match.matrix (which control units are matched to each treated unit).
-
-```{r}
+```{r warnings = FALSE, message=FALSE, fig.width=4}
 m.out1 <- matchit(type ~ area, data = match_df, method = "nearest", distance = "glm")
-#plot(m.out1, type = "jitter", interactive = FALSE)
 m.data1 <- match.data(m.out1)
+#plot(m.out1, type = "jitter", interactive = FALSE)
 ```
 
-# Table S3: Easements have significantly higher mean richness values, even when accounting for the potentially confounding effects of size and subnational governance
+**Table S4:** Easements have significantly higher mean richness values on a per parcel basis compared to fee owned protected areas when accounting for the potential confounding effect of parcel size.
 
 ```{r}
-fit1 <- lm(richness_all ~ type + area + State_Nm, data = m.data1, weights = weights) 
-
-fit2 <- lm(carbon_vulnerable ~ type + area + State_Nm, data = m.data1, weights = weights) 
-
+fit1 <- lm(richness_all ~ type + area, data = m.data1, weights = weights) 
 kable(coeftest(fit1, vcov. = vcovCL, cluster = ~subclass)[1:2,])
-kable(coeftest(fit2, vcov. = vcovCL, cluster = ~subclass)[1:2,])
-
 ```
 
-
-
+**Table S5:** Easements have significantly higher mean vulnerable carbon density on a per parcel basis compared to fee owned protected areas when accounting for the potential confounding effect of parcel size.
 
 ```{r}
-
+fit2 <- lm(carbon_vulnerable ~ type + area, data = m.data1, weights = weights) 
+kable(coeftest(fit2, vcov. = vcovCL, cluster = ~subclass)[1:2,])
 ```
 
 
