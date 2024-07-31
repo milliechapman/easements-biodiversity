@@ -9,4 +9,4 @@ All code and analysis to support:
 
   (2) Code for Supporting Info: `scripts/analysis/SI.Rmd`
 
-While licencing restricts us from sharing data used to support the findings of this study here, all data are publicly available from hosting organizations for non-commercial purposes and can be accessed as outline in `scripts/data.md`
+While licensing restricts us from sharing data used to support the findings of this study here, all data are publicly available from hosting organizations for non-commercial purposes and can be accessed as outlined in `scripts/data.md`
